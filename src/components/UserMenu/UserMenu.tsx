@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LogOut, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface UserMenuProps {
   onSignOut: () => void;
@@ -10,11 +11,11 @@ interface UserMenuProps {
 
 export const UserMenu: React.FC<UserMenuProps> = ({
   onSignOut,
-  onMyAccount,
   profileImage,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -44,7 +45,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         <div className="absolute right-0 mt-2 w-48 bg-zinc-900 rounded-lg shadow-lg py-1 z-50 border border-zinc-800">
           <button
             onClick={() => {
-              onMyAccount();
+              navigate('/myaccount');
               setIsOpen(false);
             }}
             className="w-full px-4 py-2 text-left flex items-center gap-2 hover:bg-zinc-800 text-zinc-200 hover:text-orange-500 transition-colors"
@@ -55,6 +56,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           <button
             onClick={() => {
               onSignOut();
+              navigate('/login');
               setIsOpen(false);
             }}
             className="w-full px-4 py-2 text-left flex items-center gap-2 hover:bg-zinc-800 text-red-500 hover:text-red-400 transition-colors"

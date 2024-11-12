@@ -21,10 +21,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         )}
       </div>
       <div className={`flex-1 max-w-[80%] ${isUser ? 'text-right' : 'text-left'}`}>
-        <div className={`inline-block rounded-lg px-4 py-2 ${
+        <div className={`inline-block rounded-lg px-4 py-2 max-w-full ${
           isUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'
         }`}>
-          {message.content}
+          <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
+            {message.content}
+          </div>
         </div>
         <div className="text-xs text-gray-500 mt-1">
           {message.timestamp.toLocaleTimeString()}

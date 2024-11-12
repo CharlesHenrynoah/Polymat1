@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '../../types/models';
 import { VideoPlayer } from './MessageContent/VideoPlayer';
@@ -29,7 +29,18 @@ const getModelAvatar = (modelId: string): string => {
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message, modelId, userAvatar }) => {
   const isUser = message.role === 'user';
+  const [isExpanded, setIsExpanded] = useState(false);
   
+  const getMessageWidth = (content: string) => {
+    const length = content.length;
+    if (length < 50) return 'max-w-[30%]';
+    if (length < 100) return 'max-w-[40%]';
+    if (length < 200) return 'max-w-[50%]';
+    if (length < 400) return 'max-w-[60%]';
+    if (length < 800) return 'max-w-[70%]';
+    return 'max-w-[80%]';
+  };
+
   const renderContent = () => {
     if (message.mediaType === 'video') {
       return <VideoPlayer url={message.mediaUrl!} />;
@@ -40,7 +51,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, modelId, user
     } else if (message.mediaType === 'code') {
       return <CodeBlock code={message.content} />;
     }
-    return message.content;
+    
+    return (
+      <div className="whitespace-pre-wrap break-words">
+        {message.content}
+      </div>
+    );
   };
 
   return (
@@ -49,22 +65,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, modelId, user
         isUser ? 'ring-2 ring-orange-500' : 'bg-zinc-800'
       }`}>
         {isUser ? (
-          <img
-            src={userAvatar}
-            alt="User"
-            className="w-full h-full object-cover"
-          />
+          <img src={userAvatar} alt="User" className="w-full h-full object-cover" />
         ) : (
-          <img
-            src={getModelAvatar(modelId || '')}
-            alt="AI Model"
-            className="w-full h-full object-cover"
-          />
+          <img src={getModelAvatar(modelId || '')} alt="AI Model" className="w-full h-full object-cover" />
         )}
       </div>
-      <div className={`flex-1 max-w-[80%] ${isUser ? 'text-right' : 'text-left'}`}>
+      <div className={`flex-1 ${isUser ? getMessageWidth(message.content) : 'max-w-[80%]'} ${
+        isUser ? 'text-right ml-auto' : 'text-left'
+      }`}>
         <div className={`inline-block rounded-lg px-4 py-2 ${
-          isUser ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-100'
+          isUser ? 'bg-orange-500 text-white w-full' : 'bg-zinc-800 text-zinc-100'
         }`}>
           {renderContent()}
         </div>

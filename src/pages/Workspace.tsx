@@ -46,7 +46,7 @@ export const Workspace: React.FC = () => {
     if (!currentConversation) {
       const newConversation: Conversation = {
         id: Date.now().toString(),
-        title: content.slice(0, 30) + (content.length > 30 ? '...' : ''),
+        title: 'New Workspace',
         lastMessage: content,
         timestamp: new Date(),
         messages: []
@@ -57,7 +57,7 @@ export const Workspace: React.FC = () => {
 
     const activeConversation = currentConversation || {
       id: Date.now().toString(),
-      title: content.slice(0, 30) + (content.length > 30 ? '...' : ''),
+      title: 'New Workspace',
       lastMessage: content,
       timestamp: new Date(),
       messages: []
@@ -76,14 +76,14 @@ export const Workspace: React.FC = () => {
       lastMessage: content,
       timestamp: new Date(),
       messages: [...activeConversation.messages, userMessage]
-    };
+    } as Conversation;
 
     setConversations(prev =>
       prev.map(conv =>
-        conv.id === activeConversation.id ? updatedConversation : conv
+        conv.id === activeConversation.id ? updatedConversation as Conversation : conv
       )
     );
-    setCurrentConversation(updatedConversation);
+    setCurrentConversation(updatedConversation as Conversation);
     setIsLoading(true);
 
     // Simulate AI response
@@ -110,13 +110,13 @@ export const Workspace: React.FC = () => {
         ...updatedConversation,
         lastMessage: aiMessage.content,
         messages: [...updatedConversation.messages, aiMessage]
-      };
+      } as Conversation;
 
       setConversations(prev =>
         prev.map(conv =>
-          conv.id === activeConversation.id ? finalConversation : conv
+          conv.id === activeConversation.id ? finalConversation as Conversation : conv
       ));
-      setCurrentConversation(finalConversation);
+      setCurrentConversation(finalConversation as Conversation);
       setIsLoading(false);
     }, 1000);
   };
@@ -219,8 +219,8 @@ export const Workspace: React.FC = () => {
             backgroundRepeat: 'no-repeat',
           }}
         >
-          <div className="flex-1 overflow-y-auto backdrop-blur-sm bg-black/40">
-            <div className="p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden backdrop-blur-sm bg-black/40">
+            <div className="p-4 space-y-4 max-w-full">
               {currentConversation ? (
                 currentConversation.messages.map((message) => (
                   <ChatMessage 
