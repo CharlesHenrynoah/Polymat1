@@ -1,23 +1,36 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Workspace } from './pages/Workspace';
 import { MyAccount } from './pages/MyAccount'; // Assurez-vous que le chemin est correct
 import { Login } from './pages/Login'; // Assurez-vous que le chemin est correct
 import { SignupFlow } from './pages/SignupFlow';
-import { SignupLevel1 } from './pages/SignupFlow/SignupLevel1';
-import { SignupLevel2 } from './pages/SignupFlow/SignupLevel2';
+import supabase from './config/configdb';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+      if (session) {
+        navigate('/workspace');
+      }
+    });
+  }, [navigate]);
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/workspace" element={<Workspace />} />
-        <Route path="/myaccount" element={<MyAccount username="user123" profileImage="image.png" onBack={() => {}} onSave={() => {}} />} />
-        <Route path="/login" element={<Login onLogin={() => {}} />} />
-        <Route path="/signup" element={<SignupFlow onBack={() => {}} onComplete={() => {}} />} />
-        <Route path="/signup/level1" element={<SignupLevel1 onNext={() => {}} onBack={() => {}} />} />
-        <Route path="/signup/level2" element={<SignupLevel2 onComplete={() => {}} onBack={() => {}} />} />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/workspace" element={isAuthenticated ? <Workspace /> : <Navigate to="/login" />} />
+      <Route path="/myaccount" element={isAuthenticated ? <MyAccount username="user123" profileImage="image.png" onBack={() => {}} onSave={() => {}} /> : <Navigate to="/login" />} />
+      <Route path="/login" element={<Login onLogin={() => {}} />} />
+      <Route path="/signup/*" element={<SignupFlow onBack={() => navigate('/login')} />} />
+      <Route path="/" element={<Navigate to="/login" />} />
+    </Routes>
   );
 }
 

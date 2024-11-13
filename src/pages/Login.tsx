@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
+import supabase from '../config/configdb';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => void;
@@ -11,6 +12,24 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<string>('');
+
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const { error } = await supabase.from('test').select('*').limit(1);
+        if (error) {
+          setConnectionStatus('Erreur de connexion à Supabase: ' + error.message);
+        } else {
+          setConnectionStatus('Connexion à Supabase réussie!');
+        }
+      } catch (err) {
+        setConnectionStatus('Erreur inattendue lors de la connexion');
+      }
+    };
+
+    testConnection();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +56,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="absolute inset-0 bg-black/90" />
       
       <div className="relative w-full max-w-md p-8">
+        {/* Status de connexion Supabase */}
+        {connectionStatus && (
+          <div className={`mb-4 p-3 rounded-lg text-center ${
+            connectionStatus.includes('réussie') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+          }`}>
+            {connectionStatus}
+          </div>
+        )}
+
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white font-['Orbitron']">Polymat</h1>

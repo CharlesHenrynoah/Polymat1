@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase-config';
+import supabase from '../../config/configdb';
 
 interface SignupLevel1Props {
   onNext: (data: {
+    userId?: string;
     email: string;
     password: string;
     googleAuth?: boolean;
@@ -22,25 +22,26 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    testFirebaseConnection();
+    testSupabaseConnection();
   }, []);
 
-  async function testFirebaseConnection() {
+  async function testSupabaseConnection() {
     try {
-      console.log("🔄 Test de connexion Firebase...");
+      console.log("🔄 Test de connexion Supabase...");
       
-      // Test d'écriture simple
-      const testData = {
-        message: "Test de connexion",
-        timestamp: new Date().toISOString()
-      };
+      const { data, error } = await supabase
+        .from('test')
+        .insert([
+          { message: "Test de connexion", timestamp: new Date().toISOString() }
+        ])
+        .select();
+
+      if (error) throw error;
       
-      const docRef = await addDoc(collection(db, "test"), testData);
-      console.log("✅ Écriture réussie, ID:", docRef.id);
-      
+      console.log("✅ Écriture réussie:", data);
       return true;
     } catch (error: any) {
-      console.error("❌ Erreur de connexion Firebase:", {
+      console.error("❌ Erreur de connexion Supabase:", {
         message: error.message,
         code: error.code,
         name: error.name
@@ -93,15 +94,39 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
     }
 
     try {
-      // Test de connexion à Firebase
-      const docRef = await addDoc(collection(db, "users"), {
-        email: email,
-        createdAt: new Date()
+      // Créer d'abord l'authentification
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password
       });
-      console.log("✅ Utilisateur enregistré avec l'ID:", docRef.id);
-      
-      onNext({ email, password });
-    } catch (error) {
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // Créer l'utilisateur avec les informations de base
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .insert([
+            { 
+              id: authData.user.id,
+              email,
+              created_at: new Date().toISOString(),
+              preferences: {
+                theme: 'dark',
+                language: 'fr',
+                notifications: true
+              }
+            }
+          ])
+          .select()
+          .single();
+
+        if (userError) throw userError;
+
+        console.log("✅ Utilisateur enregistré:", userData);
+        onNext({ userId: userData.id, email, password });
+      }
+    } catch (error: any) {
       console.error("❌ Erreur lors de l'enregistrement:", error);
       setErrors({ submit: 'Une erreur est survenue. Veuillez réessayer.' });
     } finally {
@@ -125,7 +150,7 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
       <div className="absolute inset-0 bg-black/90" />
       
       <div className="absolute top-4 right-4 text-white text-sm bg-zinc-800/50 px-4 py-2 rounded-lg">
-        Vérifiez la console (F12) pour voir les résultats du test Firebase
+        Vérifiez la console (F12) pour voir les résultats du test Supabase
       </div>
 
       <div className="relative w-full max-w-md p-8">

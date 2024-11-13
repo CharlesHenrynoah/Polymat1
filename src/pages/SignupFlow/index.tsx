@@ -1,28 +1,47 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SignupLevel1 } from './SignupLevel1';
 import { SignupLevel2 } from './SignupLevel2';
 
 interface SignupFlowProps {
   onBack: () => void;
-  onComplete: (data: any) => void;
 }
 
-export const SignupFlow: React.FC<SignupFlowProps> = ({ onBack, onComplete }) => {
+export const SignupFlow: React.FC<SignupFlowProps> = ({ onBack }) => {
   const [level, setLevel] = useState(1);
   const [level1Data, setLevel1Data] = useState<any>(null);
+  const navigate = useNavigate();
 
   const handleLevel1Complete = (data: any) => {
     setLevel1Data(data);
     setLevel(2);
   };
 
-  const handleLevel2Complete = (data: any) => {
-    onComplete({ ...level1Data, ...data });
+  const handleLevel2Complete = async (data: any) => {
+    try {
+      if (!level1Data?.userId) {
+        throw new Error('ID utilisateur manquant');
+      }
+      
+      // Attendre que la mise à jour soit terminée avant la redirection
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre que les données soient enregistrées
+      
+      // Redirection vers workspace après inscription complète
+      navigate('/workspace');
+    } catch (error) {
+      console.error('Erreur lors de la finalisation:', error);
+    }
   };
 
   if (level === 1) {
     return <SignupLevel1 onNext={handleLevel1Complete} onBack={onBack} />;
   }
 
-  return <SignupLevel2 onComplete={handleLevel2Complete} onBack={() => setLevel(1)} />;
+  return (
+    <SignupLevel2 
+      onComplete={handleLevel2Complete} 
+      onBack={() => setLevel(1)} 
+      userId={level1Data?.userId}
+    />
+  );
 };

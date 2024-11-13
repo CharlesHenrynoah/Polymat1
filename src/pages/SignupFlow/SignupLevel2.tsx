@@ -1,27 +1,17 @@
 import React, { useState, useRef } from 'react';
-import { ArrowRight, Upload, ChevronDown } from 'lucide-react';
+import { ArrowRight, Upload } from 'lucide-react';
 import { sectors } from '../../data/sectors';
 import { birthPlaces } from '../../data/birthPlaces';
 import { countryCodes } from '../../data/countries';
+import supabase from '../../config/configdb';
 
 interface SignupLevel2Props {
-  onComplete: (data: {
-    photo?: File;
-    username: string;
-    firstName: string;
-    lastName: string;
-    description: string;
-    sector: string;
-    gender: string;
-    birthDate: string;
-    birthPlace: string;
-    phoneNumber: string;
-    countryCode: string;
-  }) => void;
+  onComplete: (data: any) => void;
   onBack: () => void;
+  userId?: string;
 }
 
-export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }) => {
+export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, userId }) => {
   const [formData, setFormData] = useState({
     photo: undefined as File | undefined,
     photoPreview: '',
@@ -135,31 +125,72 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
     setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      onComplete({
-        photo: formData.photo,
-        username: formData.username,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        description: formData.description,
-        sector: formData.sector,
-        gender: formData.gender,
-        birthDate: formData.birthDate,
-        birthPlace: formData.birthPlace,
-        phoneNumber: formData.phoneNumber,
-        countryCode: formData.countryCode,
-      });
+    if (!userId) {
+      setErrors({ submit: 'ID utilisateur manquant' });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!validateForm()) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      let profileImageUrl = '';
+      if (formData.photo) {
+        // Upload du fichier directement dans le bucket existant
+        const fileName = `${Date.now()}_${formData.photo.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const filePath = `${userId}/${fileName}`;
+
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from('avatars') // Assurez-vous que ce bucket existe dans votre projet Supabase
+          .upload(filePath, formData.photo, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (fileError) {
+          console.error('Erreur upload:', fileError);
+          throw new Error('Erreur lors de l\'upload de l\'image');
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        profileImageUrl = publicUrl;
+      }
+
+      // Reste du code inchangé pour la mise à jour de l'utilisateur
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          username: formData.username,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          description: formData.description,
+          sector: formData.sector,
+          gender: formData.gender,
+          birthDate: formData.birthDate,
+          birthPlace: formData.birthPlace,
+          phoneNumber: formData.phoneNumber,
+          countryCode: formData.countryCode,
+          profileImage: profileImageUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (updateError) throw updateError;
+
+      onComplete(formData);
     } catch (error) {
-      setErrors(prev => ({
-        ...prev,
-        submit: 'Failed to complete registration'
-      }));
+      console.error('Erreur lors de la mise à jour:', error);
+      setErrors({ 
+        submit: error instanceof Error ? error.message : 'Une erreur est survenue. Veuillez réessayer.' 
+      });
     } finally {
       setIsLoading(false);
     }

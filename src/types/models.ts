@@ -24,3 +24,29 @@ export type ChatMessage = {
   mediaType?: 'video' | 'image' | 'audio' | 'code';
   modelId?: string;
 };
+
+export type User = {
+  id: string;
+  email: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  description?: string;
+  sector?: string;
+  gender?: 'male' | 'female' | 'other';
+  birthDate?: string;
+  birthPlace?: string;
+  phoneNumber?: string;
+  countryCode?: string;
+  profileImage?: string;
+  created_at: Date;
+  updated_at?: Date;
+  last_login?: Date;
+  isActive: boolean;
+  role: 'user' | 'admin' | 'moderator';
+  preferences?: {
+    theme?: 'light' | 'dark';
+    language?: string;
+    notifications?: boolean;
+  };
+};
