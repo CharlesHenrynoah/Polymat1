@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { db } from '../../config/firebase-config';
 
 interface SignupLevel1Props {
   onNext: (data: {
@@ -18,6 +20,34 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    testFirebaseConnection();
+  }, []);
+
+  async function testFirebaseConnection() {
+    try {
+      console.log("🔄 Test de connexion Firebase...");
+      
+      // Test d'écriture simple
+      const testData = {
+        message: "Test de connexion",
+        timestamp: new Date().toISOString()
+      };
+      
+      const docRef = await addDoc(collection(db, "test"), testData);
+      console.log("✅ Écriture réussie, ID:", docRef.id);
+      
+      return true;
+    } catch (error: any) {
+      console.error("❌ Erreur de connexion Firebase:", {
+        message: error.message,
+        code: error.code,
+        name: error.name
+      });
+      return false;
+    }
+  }
 
   const validatePassword = (pass: string) => {
     const requirements = {
@@ -63,19 +93,17 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
     }
 
     try {
-      // Simulate API check for existing email
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Test de connexion à Firebase
+      const docRef = await addDoc(collection(db, "users"), {
+        email: email,
+        createdAt: new Date()
+      });
+      console.log("✅ Utilisateur enregistré avec l'ID:", docRef.id);
       
-      // For demo, randomly simulate existing email
-      if (Math.random() > 0.7) {
-        setErrors({ email: 'This email is already registered. Please try another or sign in.' });
-        setIsLoading(false);
-        return;
-      }
-
       onNext({ email, password });
     } catch (error) {
-      setErrors({ submit: 'An error occurred. Please try again.' });
+      console.error("❌ Erreur lors de l'enregistrement:", error);
+      setErrors({ submit: 'Une erreur est survenue. Veuillez réessayer.' });
     } finally {
       setIsLoading(false);
     }
@@ -96,6 +124,10 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
     >
       <div className="absolute inset-0 bg-black/90" />
       
+      <div className="absolute top-4 right-4 text-white text-sm bg-zinc-800/50 px-4 py-2 rounded-lg">
+        Vérifiez la console (F12) pour voir les résultats du test Firebase
+      </div>
+
       <div className="relative w-full max-w-md p-8">
         {/* Logo */}
         <div className="text-center mb-8">
