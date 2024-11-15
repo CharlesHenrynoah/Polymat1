@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
 import supabase from '../../config/configdb';
 
@@ -20,35 +20,17 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    testSupabaseConnection();
-  }, []);
-
-  async function testSupabaseConnection() {
-    try {
-      console.log("🔄 Test de connexion Supabase...");
-      
-      const { data, error } = await supabase
-        .from('test')
-        .insert([
-          { message: "Test de connexion", timestamp: new Date().toISOString() }
-        ])
-        .select();
-
-      if (error) throw error;
-      
-      console.log("✅ Écriture réussie:", data);
-      return true;
-    } catch (error: any) {
-      console.error("❌ Erreur de connexion Supabase:", {
-        message: error.message,
-        code: error.code,
-        name: error.name
-      });
-      return false;
-    }
-  }
+  const [emailValidation, setEmailValidation] = useState({
+    hasUsername: false,
+    hasAt: false,
+    hasDomain: false,
+    isValid: false
+  });
+  const [emailValidationDisplay, setEmailValidationDisplay] = useState({
+    showUsername: false,
+    showAt: false,
+    showDomain: false
+  });
 
   const validatePassword = (pass: string) => {
     const requirements = {
@@ -62,12 +44,32 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
     return requirements;
   };
 
+  const validateEmailSequence = (email: string) => {
+    const parts = email.split('@');
+    
+    // Mise à jour de l'affichage progressif
+    setEmailValidationDisplay({
+      showUsername: email.length > 0,
+      showAt: parts[0]?.length > 0,
+      showDomain: email.includes('@')
+    });
+
+    // Validation existante
+    const validation = {
+      hasUsername: parts[0]?.length > 0,
+      hasAt: email.includes('@'),
+      hasDomain: parts[1]?.includes('.'),
+      isValid: /\S+@\S+\.\S+/.test(email)
+    };
+    setEmailValidation(validation);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     const newErrors: Record<string, string> = {};
 
-    // Email validation
+    // Email validation simplifiée
     if (!email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
@@ -123,11 +125,9 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
 
         if (userError) throw userError;
 
-        console.log("✅ Utilisateur enregistré:", userData);
         onNext({ userId: userData.id, email, password });
       }
     } catch (error: any) {
-      console.error("❌ Erreur lors de l'enregistrement:", error);
       setErrors({ submit: 'Une erreur est survenue. Veuillez réessayer.' });
     } finally {
       setIsLoading(false);
@@ -148,10 +148,6 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
       }}
     >
       <div className="absolute inset-0 bg-black/90" />
-      
-      <div className="absolute top-4 right-4 text-white text-sm bg-zinc-800/50 px-4 py-2 rounded-lg">
-        Vérifiez la console (F12) pour voir les résultats du test Supabase
-      </div>
 
       <div className="relative w-full max-w-md p-8">
         {/* Logo */}
@@ -183,6 +179,7 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
+                  validateEmailSequence(e.target.value);
                   setErrors({ ...errors, email: '' });
                 }}
                 className={`w-full px-4 py-2.5 bg-zinc-800/50 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
@@ -190,6 +187,31 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
                 }`}
                 placeholder="Enter your email"
               />
+              <div className="mt-1 space-y-1 text-xs">
+                {emailValidationDisplay.showUsername && (
+                  <div className={`transition-opacity duration-300 ${
+                    emailValidation.hasUsername ? 'text-green-500' : 'text-zinc-500'
+                  }`}>
+                    Username
+                  </div>
+                )}
+                
+                {emailValidationDisplay.showAt && (
+                  <div className={`transition-opacity duration-300 ${
+                    emailValidation.hasAt ? 'text-green-500' : 'text-zinc-500'
+                  }`}>
+                    @ symbol
+                  </div>
+                )}
+                
+                {emailValidationDisplay.showDomain && (
+                  <div className={`transition-opacity duration-300 ${
+                    emailValidation.hasDomain ? 'text-green-500' : 'text-zinc-500'
+                  }`}>
+                    Domain (.com, .fr, etc.)
+                  </div>
+                )}
+              </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-500">{errors.email}</p>
               )}
@@ -236,6 +258,9 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
                     </div>
                     <div className={validatePassword(password).number ? 'text-green-500' : 'text-zinc-500'}>
                       Number
+                    </div>
+                    <div className={validatePassword(password).special ? 'text-green-500' : 'text-zinc-500'}>
+                      Special char
                     </div>
                   </div>
                 </div>

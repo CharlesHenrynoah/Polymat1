@@ -65,10 +65,8 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
     
     setIsCheckingUsername(true);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For demo, randomly determine if username is taken
       const isTaken = Math.random() > 0.7;
       if (isTaken) {
         setErrors(prev => ({
@@ -91,7 +89,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
     }
 
     try {
-      // Simulate sending verification code
       await new Promise(resolve => setTimeout(resolve, 1000));
       handleChange('isVerificationSent', true);
     } catch (error) {
@@ -141,12 +138,11 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
     try {
       let profileImageUrl = '';
       if (formData.photo) {
-        // Upload du fichier directement dans le bucket existant
         const fileName = `${Date.now()}_${formData.photo.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
         const filePath = `${userId}/${fileName}`;
 
         const { data: fileData, error: fileError } = await supabase.storage
-          .from('avatars') // Assurez-vous que ce bucket existe dans votre projet Supabase
+          .from('avatars')
           .upload(filePath, formData.photo, {
             cacheControl: '3600',
             upsert: true
@@ -164,7 +160,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
         profileImageUrl = publicUrl;
       }
 
-      // Reste du code inchangé pour la mise à jour de l'utilisateur
       const { error: updateError } = await supabase
         .from('users')
         .update({
@@ -208,13 +203,11 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
       <div className="absolute inset-0 bg-black/90" />
       
       <div className="relative w-full max-w-2xl p-8">
-        {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white font-['Orbitron']">Polymat</h1>
           <p className="mt-2 text-zinc-400">Complete your profile</p>
         </div>
 
-        {/* Progress Indicator */}
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm">✓</div>
@@ -223,10 +216,8 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
           </div>
         </div>
 
-        {/* Profile Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-6 bg-zinc-900/50 backdrop-blur-md p-8 rounded-2xl border border-zinc-800/50 shadow-xl">
-            {/* Photo Upload */}
             <div className="flex justify-center">
               <div className="relative">
                 <input
@@ -253,7 +244,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
               </div>
             </div>
 
-            {/* Basic Information */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
@@ -340,7 +330,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
               </div>
             </div>
 
-            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Short Description *
@@ -363,7 +352,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
               </div>
             </div>
 
-            {/* Industry & Birth Info */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
@@ -456,7 +444,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
               </div>
             </div>
 
-            {/* Phone Verification */}
             {formData.isVerificationSent ? (
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
@@ -466,7 +453,7 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
                   type="text"
                   value={formData.verificationCode}
                   onChange={(e) => handleChange('verificationCode', e.target.value)}
-                  className={`w-full px-4 py-2.5 bg-zinc -800/50 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                  className={`w-full px-4 py-2.5 bg-zinc-800/50 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
                     errors.verificationCode ? 'border-red-500' : 'border-zinc-700/50'
                   }`}
                   placeholder="Enter verification code"
@@ -486,7 +473,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
               </button>
             )}
 
-            {/* Terms and Conditions */}
             <div className="space-y-4">
               <label className="flex items-start gap-3 cursor-pointer group">
                 <div className="relative flex items-start">
@@ -523,7 +509,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
               )}
             </div>
 
-            {/* Navigation Buttons */}
             <div className="flex items-center justify-between pt-4 border-t border-zinc-800/50">
               <button
                 type="button"

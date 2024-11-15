@@ -23,11 +23,9 @@ export const SignupFlow: React.FC<SignupFlowProps> = ({ onBack }) => {
         throw new Error('ID utilisateur manquant');
       }
       
-      // Attendre que la mise à jour soit terminée avant la redirection
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre que les données soient enregistrées
-      
-      // Redirection vers workspace après inscription complète
+      // Redirection immédiate vers workspace
       navigate('/workspace');
+      
     } catch (error) {
       console.error('Erreur lors de la finalisation:', error);
     }
