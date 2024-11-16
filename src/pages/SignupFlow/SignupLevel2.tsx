@@ -1,23 +1,25 @@
 import React, { useState, useRef } from 'react';
 import { ArrowRight, Upload } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { sectors } from '../../data/sectors';
 import { birthPlaces } from '../../data/birthPlaces';
 import { countryCodes } from '../../data/countries';
 import supabase from '../../config/configdb';
+import { SignupData, SignupLevel2Props } from './index';
 
-interface SignupLevel2Props {
-  onComplete: (data: any) => void;
-  onBack: () => void;
-  userId?: string;
-}
+export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }) => {
+  const location = useLocation();
+  const userData = location.state;
 
-export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, userId }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
-    photo: undefined as File | undefined,
-    photoPreview: '',
+    photo: userData?.avatar || undefined,
+    photoPreview: userData?.avatar || '',
     username: '',
-    firstName: '',
-    lastName: '',
+    firstName: userData?.name?.split(' ')[0] || '',
+    lastName: userData?.name?.split(' ')[1] || '',
     description: '',
     sector: sectors[0],
     gender: '',
@@ -31,9 +33,7 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const genderOptions = [
     { value: 'male', label: 'Male' },
@@ -52,11 +52,26 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleChange('photo', file);
-      handleChange('photoPreview', URL.createObjectURL(file));
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({ ...prev, photo: 'Please upload an image file' }));
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, photo: 'Image must be less than 5MB' }));
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        handleChange('photo', base64String);
+        handleChange('photoPreview', URL.createObjectURL(file));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -122,13 +137,9 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!userData) return;
 
-    if (!userId) {
-      setErrors({ submit: 'ID utilisateur manquant' });
-      setIsLoading(false);
-      return;
-    }
+    setIsLoading(true);
 
     if (!validateForm()) {
       setIsLoading(false);
@@ -136,60 +147,45 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack, 
     }
 
     try {
-      let profileImageUrl = '';
-      if (formData.photo) {
-        const fileName = `${Date.now()}_${formData.photo.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        const filePath = `${userId}/${fileName}`;
-
-        const { data: fileData, error: fileError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, formData.photo, {
-            cacheControl: '3600',
-            upsert: true
-          });
-
-        if (fileError) {
-          console.error('Erreur upload:', fileError);
-          throw new Error('Erreur lors de l\'upload de l\'image');
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
-
-        profileImageUrl = publicUrl;
-      }
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userData.id,
           username: formData.username,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
           description: formData.description,
           sector: formData.sector,
           gender: formData.gender,
-          birthDate: formData.birthDate,
-          birthPlace: formData.birthPlace,
-          phoneNumber: formData.phoneNumber,
-          countryCode: formData.countryCode,
-          profileImage: profileImageUrl,
+          birth_date: formData.birthDate,
+          birth_place: formData.birthPlace,
+          phone_number: formData.phoneNumber,
+          country_code: formData.countryCode,
+          avatar_url: formData.photo,
+          email: userData.email,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+        });
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
-      onComplete(formData);
+      onComplete({
+        id: userData.id,
+        email: userData.email,
+      });
+
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      setErrors({ 
-        submit: error instanceof Error ? error.message : 'Une erreur est survenue. Veuillez réessayer.' 
+      console.error('Error updating profile:', error);
+      setErrors({
+        submit: error instanceof Error ? error.message : 'An error occurred. Please try again.' 
       });
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!userData) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div 

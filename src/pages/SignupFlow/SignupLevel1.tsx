@@ -1,25 +1,22 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import supabase from '../../config/configdb';
+import { FcGoogle } from 'react-icons/fc';
+import { SignupData, SignupLevel1Props } from './index';
+import { useAuth } from '../../contexts/AuthContext';
 
-interface SignupLevel1Props {
-  onNext: (data: {
-    userId?: string;
-    email: string;
-    password: string;
-    googleAuth?: boolean;
-  }) => void;
-  onBack: () => void;
-}
-
-export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) => {
-  const [email, setEmail] = useState('');
+export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onSubmit, initialData }) => {
+  const { setUser } = useAuth();
+  const [email, setEmail] = useState(initialData.email || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [emailValidation, setEmailValidation] = useState({
     hasUsername: false,
     hasAt: false,
@@ -47,14 +44,12 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
   const validateEmailSequence = (email: string) => {
     const parts = email.split('@');
     
-    // Mise à jour de l'affichage progressif
     setEmailValidationDisplay({
       showUsername: email.length > 0,
       showAt: parts[0]?.length > 0,
       showDomain: email.includes('@')
     });
 
-    // Validation existante
     const validation = {
       hasUsername: parts[0]?.length > 0,
       hasAt: email.includes('@'),
@@ -67,16 +62,15 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     const newErrors: Record<string, string> = {};
 
-    // Email validation simplifiée
     if (!email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Password validation
     const passwordReqs = validatePassword(password);
     if (!password) {
       newErrors.password = 'Password is required';
@@ -84,7 +78,6 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
       newErrors.password = 'Password does not meet security requirements';
     }
 
-    // Confirm password validation
     if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
@@ -96,7 +89,6 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
     }
 
     try {
-      // Créer d'abord l'authentification
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password
@@ -105,7 +97,6 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
       if (authError) throw authError;
 
       if (authData.user) {
-        // Créer l'utilisateur avec les informations de base
         const { data: userData, error: userError } = await supabase
           .from('users')
           .insert([
@@ -125,17 +116,35 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
 
         if (userError) throw userError;
 
-        onNext({ userId: userData.id, email, password });
+        onSubmit({ email, id: userData.id });
       }
     } catch (error: any) {
-      setErrors({ submit: 'Une erreur est survenue. Veuillez réessayer.' });
+      setError('Une erreur est survenue. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignup = () => {
-    onNext({ email: '', password: '', googleAuth: true });
+  const handleGoogleSignup = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (error) throw error;
+      
+    } catch (error) {
+      console.error('Erreur Google Auth:', error);
+      setError('Erreur lors de la connexion avec Google');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -164,6 +173,12 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
             <div className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center text-sm">2</div>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 text-red-500 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Signup Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -326,10 +341,11 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
             <button
               type="button"
               onClick={handleGoogleSignup}
-              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-zinc-800/50 text-white rounded-lg hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-colors border border-zinc-700/50"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-white text-gray-800 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Mail className="w-5 h-5 text-orange-500" />
-              <span>Google</span>
+              <FcGoogle className="w-5 h-5" />
+              <span>{isLoading ? 'Chargement...' : 'Continue with Google'}</span>
             </button>
 
             {/* Sign In Link */}
@@ -337,7 +353,7 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onNext, onBack }) =>
               Already have an account?{' '}
               <button
                 type="button"
-                onClick={onBack}
+                onClick={() => navigate('/login')}
                 className="text-orange-500 hover:text-orange-400 transition-colors font-medium"
               >
                 Sign in

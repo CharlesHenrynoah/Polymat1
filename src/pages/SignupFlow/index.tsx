@@ -1,45 +1,61 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { SignupLevel1 } from './SignupLevel1';
 import { SignupLevel2 } from './SignupLevel2';
 
-interface SignupFlowProps {
+// Interface commune pour les données d'inscription
+export interface SignupData {
+  email?: string;
+  name?: string;
+  avatar?: string;
+  id?: string;
+}
+
+// Interfaces pour les props des composants
+export interface SignupLevel1Props {
+  onSubmit: (data: SignupData) => void;
+  initialData: SignupData;
+}
+
+export interface SignupLevel2Props {
+  data: SignupData;
+  onComplete: (data: SignupData) => void;
   onBack: () => void;
 }
 
-export const SignupFlow: React.FC<SignupFlowProps> = ({ onBack }) => {
-  const [level, setLevel] = useState(1);
-  const [level1Data, setLevel1Data] = useState<any>(null);
-  const navigate = useNavigate();
+export const SignupFlow = () => {
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [signupData, setSignupData] = useState<SignupData>({});
 
-  const handleLevel1Complete = (data: any) => {
-    setLevel1Data(data);
-    setLevel(2);
+  const handleLevel1Complete = (data: SignupData) => {
+    setSignupData(data);
+    setCurrentLevel(2);
   };
 
-  const handleLevel2Complete = async (data: any) => {
-    try {
-      if (!level1Data?.userId) {
-        throw new Error('ID utilisateur manquant');
-      }
-      
-      // Redirection immédiate vers workspace
-      navigate('/workspace');
-      
-    } catch (error) {
-      console.error('Erreur lors de la finalisation:', error);
-    }
+  const handleBack = () => {
+    setCurrentLevel(1);
   };
 
-  if (level === 1) {
-    return <SignupLevel1 onNext={handleLevel1Complete} onBack={onBack} />;
-  }
+  const handleComplete = (data: SignupData) => {
+    console.log('Inscription terminée:', { ...signupData, ...data });
+  };
 
   return (
-    <SignupLevel2 
-      onComplete={handleLevel2Complete} 
-      onBack={() => setLevel(1)} 
-      userId={level1Data?.userId}
-    />
+    <div>
+      {currentLevel === 1 && (
+        <SignupLevel1 
+          onSubmit={handleLevel1Complete}
+          initialData={signupData}
+        />
+      )}
+      {currentLevel === 2 && (
+        <SignupLevel2 
+          data={signupData}  // Passez les données comme une prop unique
+          onComplete={handleComplete}
+          onBack={handleBack}
+        />
+      )}
+    </div>
   );
 };
+
+export default SignupFlow;
