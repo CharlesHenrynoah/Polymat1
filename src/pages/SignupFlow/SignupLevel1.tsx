@@ -128,6 +128,7 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onSubmit, initialDat
         if (userError) throw userError;
 
         onSubmit({ email, id: userData.id, username: userData.username });
+        navigate('/signup/level2', { state: { email, id: userData.id, username: userData.username } });
       }
     } catch (error: any) {
       setError('Une erreur est survenue. Veuillez réessayer.');
@@ -150,6 +151,7 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onSubmit, initialDat
 
       if (error) throw error;
       
+      navigate('/signup/level2');
     } catch (error) {
       console.error('Erreur Google Auth:', error);
       setError('Erreur lors de la connexion avec Google');
