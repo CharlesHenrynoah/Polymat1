@@ -38,7 +38,7 @@ function App() {
           } } />} />
           <Route path="/" element={<Navigate to="/login" />} />
           <Route 
-            path="/workspace" 
+            path="/workspace/:username" 
             element={
               <ProtectedRoute>
                 <Workspace />
