@@ -30,18 +30,50 @@ export default function AuthCallback() {
             avatar: session.user.user_metadata?.avatar_url
           };
 
+          try {
+            // Insérer dans la table users s'il n'existe pas déjà
+            const { error: insertError } = await supabase
+              .from('users')
+              .upsert([
+                { 
+                  id: userData.id,
+                  email: userData.email,
+                  first_name: userData.name?.split(' ')[0] || '',
+                  last_name: userData.name?.split(' ')[1] || '',
+                  profile_image: userData.avatar,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  preferences: {
+                    theme: 'dark',
+                    language: 'fr',
+                    notifications: true
+                  }
+                }
+              ], 
+              { 
+                onConflict: 'id',
+                ignoreDuplicates: true 
+              });
+
+            if (insertError) {
+              console.error('Erreur insertion user:', insertError);
+            }
+          } catch (dbError) {
+            console.error('Erreur base de données:', dbError);
+          }
+
           // Sauvegarder dans localStorage ET dans le contexte
           localStorage.setItem('signupData', JSON.stringify(userData));
           setUser(userData);
 
-          // Vérifier le profil
+          // Vérifier si l'utilisateur a déjà complété son profil
           const { data: profile } = await supabase
-            .from('profiles')
+            .from('users')
             .select('*')
             .eq('id', session.user.id)
             .single();
 
-          if (profile) {
+          if (profile?.username) {
             navigate('/dashboard');
           } else {
             navigate('/signup/level2', { state: userData });

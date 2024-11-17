@@ -27,8 +27,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
     birthPlace: Object.values(birthPlaces)[0][0],
     phoneNumber: '',
     countryCode: countryCodes[0].code,
-    verificationCode: '',
-    isVerificationSent: false,
     acceptTerms: false,
   });
 
@@ -94,26 +92,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
     }
   };
 
-  const sendVerificationCode = async () => {
-    if (!formData.phoneNumber) {
-      setErrors(prev => ({
-        ...prev,
-        phoneNumber: 'Please enter a phone number'
-      }));
-      return;
-    }
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      handleChange('isVerificationSent', true);
-    } catch (error) {
-      setErrors(prev => ({
-        ...prev,
-        phoneNumber: 'Failed to send verification code'
-      }));
-    }
-  };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -124,9 +102,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
     if (!formData.gender) newErrors.gender = 'Gender is required';
     if (!formData.birthDate) newErrors.birthDate = 'Birth date is required';
     if (!formData.phoneNumber) newErrors.phoneNumber = 'Phone number is required';
-    if (formData.isVerificationSent && !formData.verificationCode) {
-      newErrors.verificationCode = 'Please enter the verification code';
-    }
     if (!formData.acceptTerms) {
       newErrors.terms = 'You must accept the terms and conditions';
     }
@@ -147,10 +122,27 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
     }
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: userData.id,
+      // Vérifier si le username existe déjà (sauf pour l'utilisateur actuel)
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', formData.username)
+        .neq('id', userData.id) // Important: exclure l'utilisateur actuel
+        .single();
+
+      if (existingUser) {
+        setErrors(prev => ({
+          ...prev,
+          username: 'This username is already taken'
+        }));
+        setIsLoading(false);
+        return;
+      }
+
+      // Mettre à jour l'utilisateur existant
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
           username: formData.username,
           first_name: formData.firstName,
           last_name: formData.lastName,
@@ -161,23 +153,39 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
           birth_place: formData.birthPlace,
           phone_number: formData.phoneNumber,
           country_code: formData.countryCode,
-          avatar_url: formData.photo,
-          email: userData.email,
+          profile_image: formData.photo, // Pas besoin de conversion binaire
           updated_at: new Date().toISOString()
-        });
+        })
+        .eq('id', userData.id);
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('Erreur update:', updateError);
+        throw new Error(`Failed to update user profile: ${updateError.message}`);
+      }
 
+      // Mettre à jour les métadonnées utilisateur
+      const { error: metaError } = await supabase.auth.updateUser({
+        data: {
+          completed_signup: true
+        }
+      });
+
+      if (metaError) {
+        console.error('Erreur mise à jour métadonnées:', metaError);
+      }
+
+      // Si tout s'est bien passé
       onComplete({
         id: userData.id,
         email: userData.email,
       });
 
     } catch (error) {
-      console.error('Error updating profile:', error);
-      setErrors({
-        submit: error instanceof Error ? error.message : 'An error occurred. Please try again.' 
-      });
+      console.error('Error updating user:', error);
+      setErrors(prev => ({
+        ...prev,
+        submit: error instanceof Error ? error.message : 'An error occurred while updating your profile.'
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -439,35 +447,6 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
                 )}
               </div>
             </div>
-
-            {formData.isVerificationSent ? (
-              <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                  Verification Code *
-                </label>
-                <input
-                  type="text"
-                  value={formData.verificationCode}
-                  onChange={(e) => handleChange('verificationCode', e.target.value)}
-                  className={`w-full px-4 py-2.5 bg-zinc-800/50 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    errors.verificationCode ? 'border-red-500' : 'border-zinc-700/50'
-                  }`}
-                  placeholder="Enter verification code"
-                  maxLength={6}
-                />
-                {errors.verificationCode && (
-                  <p className="mt-1 text-sm text-red-500">{errors.verificationCode}</p>
-                )}
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={sendVerificationCode}
-                className="w-full px-4 py-2.5 bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-colors"
-              >
-                Send Verification Code
-              </button>
-            )}
 
             <div className="space-y-4">
               <label className="flex items-start gap-3 cursor-pointer group">
