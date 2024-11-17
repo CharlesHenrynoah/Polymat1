@@ -180,10 +180,11 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
         onComplete({
           id: userData.id,
           email: userData.email,
+          username: formData.username, // P46d3
         });
 
         // Rediriger vers workspace/username
-        navigate(`/workspace/${formData.username}`, { 
+        navigate(`/workspace/${formData.username}`, { // Pe098
           replace: true,
           state: { 
             username: formData.username,

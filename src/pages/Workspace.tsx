@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModelSelector } from '../components/ModelSelector/ModelSelector';
 import { ChatMessage } from '../components/Chat/ChatMessage';
 import { ChatInput } from '../components/Chat/ChatInput';
@@ -9,8 +9,10 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Conversation } from '../types/conversation';
 import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Workspace: React.FC = () => {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
@@ -19,8 +21,15 @@ export const Workspace: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState('https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&q=80');
-  const [username] = useState('User');
-  const [profileImage] = useState('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&h=200&auto=format&fit=crop');
+  const [username, setUsername] = useState(user?.username || 'User');
+  const [profileImage, setProfileImage] = useState(user?.profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&h=200&auto=format&fit=crop');
+
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username);
+      setProfileImage(user.profileImage);
+    }
+  }, [user]);
 
   const selectedModel = modelCategories
     .flatMap(category => category.models)

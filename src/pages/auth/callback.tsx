@@ -74,7 +74,7 @@ export default function AuthCallback() {
             .single();
 
           if (profile?.username) {
-            navigate('/dashboard');
+            navigate(`/workspace/${profile.username}`);
           } else {
             navigate('/signup/level2', { state: userData });
           }

@@ -116,7 +116,7 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onSubmit, initialDat
 
         if (userError) throw userError;
 
-        onSubmit({ email, id: userData.id });
+        onSubmit({ email, id: userData.id, username: userData.username });
       }
     } catch (error: any) {
       setError('Une erreur est survenue. Veuillez réessayer.');
