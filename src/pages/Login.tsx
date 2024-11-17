@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import supabase from '../config/configdb';
+import { useLocation } from 'react-router-dom';
+import { ErrorMessage } from '../components/ErrorMessage';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => void;
@@ -13,6 +15,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>('');
+  const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
+  const location = useLocation();
 
   useEffect(() => {
     const testConnection = async () => {
@@ -30,6 +34,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     testConnection();
   }, []);
+
+  useEffect(() => {
+    if (location.state && location.state.message) {
+      setRedirectMessage(location.state.message);
+    }
+  }, [location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +73,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           }`}>
             {connectionStatus}
           </div>
+        )}
+
+        {/* Redirect Message */}
+        {redirectMessage && (
+          <ErrorMessage 
+            message={redirectMessage} 
+            onDismiss={() => setRedirectMessage(null)} 
+            type="info" 
+          />
         )}
 
         {/* Logo */}

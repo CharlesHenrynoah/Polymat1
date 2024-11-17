@@ -89,6 +89,17 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onSubmit, initialDat
     }
 
     try {
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existingUser) {
+        navigate('/login', { state: { message: 'Account already exists' } });
+        return;
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password
