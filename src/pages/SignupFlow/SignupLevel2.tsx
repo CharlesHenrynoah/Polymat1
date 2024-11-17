@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ArrowRight, Upload } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { sectors } from '../../data/sectors';
 import { birthPlaces } from '../../data/birthPlaces';
 import { countryCodes } from '../../data/countries';
@@ -9,6 +9,7 @@ import { SignupData, SignupLevel2Props } from './index';
 
 export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const userData = location.state;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -122,12 +123,12 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
     }
 
     try {
-      // Vérifier si le username existe déjà (sauf pour l'utilisateur actuel)
+      // Vérifier si le username existe déjà
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('id')
         .eq('username', formData.username)
-        .neq('id', userData.id) // Important: exclure l'utilisateur actuel
+        .neq('id', userData.id)
         .single();
 
       if (existingUser) {
@@ -139,7 +140,7 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
         return;
       }
 
-      // Mettre à jour l'utilisateur existant
+      // Mettre à jour l'utilisateur
       const { error: updateError } = await supabase
         .from('users')
         .update({
@@ -153,7 +154,7 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
           birth_place: formData.birthPlace,
           phone_number: formData.phoneNumber,
           country_code: formData.countryCode,
-          profile_image: formData.photo, // Pas besoin de conversion binaire
+          profile_image: formData.photo,
           updated_at: new Date().toISOString()
         })
         .eq('id', userData.id);
@@ -164,21 +165,35 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
       }
 
       // Mettre à jour les métadonnées utilisateur
-      const { error: metaError } = await supabase.auth.updateUser({
-        data: {
-          completed_signup: true
-        }
-      });
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (session?.session) {
+        // Mettre à jour les métadonnées
+        await supabase.auth.updateUser({
+          data: {
+            completed_signup: true,
+            profile_completed: true
+          }
+        });
 
-      if (metaError) {
-        console.error('Erreur mise à jour métadonnées:', metaError);
+        // Appeler onComplete avec les données
+        onComplete({
+          id: userData.id,
+          email: userData.email,
+        });
+
+        // Rediriger vers Workspace
+        navigate('/workspace', { 
+          replace: true,
+          state: { 
+            username: formData.username,
+            profileImage: formData.photo,
+            userId: userData.id
+          }
+        });
+      } else {
+        throw new Error('No active session');
       }
-
-      // Si tout s'est bien passé
-      onComplete({
-        id: userData.id,
-        email: userData.email,
-      });
 
     } catch (error) {
       console.error('Error updating user:', error);

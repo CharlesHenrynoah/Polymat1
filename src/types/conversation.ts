@@ -4,6 +4,7 @@ export interface Conversation {
   lastMessage: string;
   timestamp: Date;
   messages: {
+    modelId: string;
     id: string;
     content: string;
     role: 'user' | 'assistant';

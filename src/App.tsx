@@ -6,6 +6,7 @@ import { SignupData, SignupFlow } from './pages/SignupFlow';
 import { SignupLevel2 } from './pages/SignupFlow/SignupLevel2';
 import { Login } from './pages/Login';
 import { Navigate } from 'react-router-dom';
+import { Workspace } from './pages/Workspace';
 
 function App() {
   return (
@@ -36,6 +37,14 @@ function App() {
             throw new Error('Function not implemented.');
           } } />} />
           <Route path="/" element={<Navigate to="/login" />} />
+          <Route 
+            path="/workspace" 
+            element={
+              <ProtectedRoute>
+                <Workspace />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
