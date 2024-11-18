@@ -17,6 +17,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>('');
   const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -54,7 +55,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       });
 
       if (error) {
-        console.error('Login failed:', error);
+        if (error.message === 'Invalid login credentials') {
+          setLoginError('Email not found. Please check your email or create a new account.');
+        } else {
+          console.error('Login failed:', error);
+        }
         return;
       }
 
@@ -123,6 +128,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             message={redirectMessage} 
             onDismiss={() => setRedirectMessage(null)} 
             type="info" 
+          />
+        )}
+
+        {/* Login Error Message */}
+        {loginError && (
+          <ErrorMessage 
+            message={loginError} 
+            onDismiss={() => setLoginError(null)} 
+            type="error" 
           />
         )}
 
@@ -234,7 +248,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             {/* Sign Up Link */}
             <div className="pt-4 text-center text-sm text-zinc-400 border-t border-zinc-800/50">
               Don't have an account?{' '}
-              <button type="button" className="text-orange-500 hover:text-orange-400 transition-colors font-medium">
+              <button 
+                type="button" 
+                className="text-orange-500 hover:text-orange-400 transition-colors font-medium"
+                onClick={() => navigate('/signup')}
+              >
                 Create one now
               </button>
             </div>
