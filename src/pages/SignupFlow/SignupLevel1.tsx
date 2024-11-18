@@ -117,7 +117,7 @@ export const SignupLevel1: React.FC<SignupLevel1Props> = ({ onSubmit, initialDat
               created_at: new Date().toISOString(),
               preferences: {
                 theme: 'dark',
-                language: 'fr',
+                language: 'en',
                 notifications: true
               }
             }
