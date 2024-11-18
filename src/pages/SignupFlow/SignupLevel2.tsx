@@ -155,7 +155,12 @@ export const SignupLevel2: React.FC<SignupLevel2Props> = ({ onComplete, onBack }
           phone_number: formData.phoneNumber,
           country_code: formData.countryCode,
           profile_image: formData.photo,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          preferences: {
+            theme: 'dark',
+            language: 'en',
+            notifications: true
+          }
         })
         .eq('id', userData.id);
 

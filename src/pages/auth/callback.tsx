@@ -45,7 +45,7 @@ export default function AuthCallback() {
                   updated_at: new Date().toISOString(),
                   preferences: {
                     theme: 'dark',
-                    language: 'fr',
+                    language: 'en',
                     notifications: true
                   }
                 }
