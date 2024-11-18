@@ -33,9 +33,35 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/login" element={<Login onLogin={function (email: string, password: string): void {
-            throw new Error('Function not implemented.');
-          } } />} />
+          <Route path="/login" element={<Login onLogin={async (email: string, password: string) => {
+            try {
+              const { data: { session }, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+              });
+
+              if (error) {
+                console.error('Login failed:', error);
+                return;
+              }
+
+              if (session?.user) {
+                const { data: profile } = await supabase
+                  .from('users')
+                  .select('*')
+                  .eq('id', session.user.id)
+                  .single();
+
+                if (profile?.username) {
+                  navigate(`/workspace/${profile.username}`);
+                } else {
+                  navigate('/signup/level2', { state: { email, id: session.user.id } });
+                }
+              }
+            } catch (error) {
+              console.error('Login failed:', error);
+            }
+          }} />} />
           <Route path="/" element={<Navigate to="/login" />} />
           <Route 
             path="/workspace/:username" 
