@@ -30,16 +30,6 @@ const getModelAvatar = (modelId: string): string => {
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message, modelId, userAvatar }) => {
   const isUser = message.role === 'user';
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  const getMessageWidth = (content: string) => {
-    const length = content.length;
-    if (length < 50) return 'max-w-[30%]';
-    if (length < 100) return 'max-w-[40%]';
-    if (length < 200) return 'max-w-[50%]';
-    if (length < 400) return 'max-w-[60%]';
-    if (length < 800) return 'max-w-[70%]';
-    return 'max-w-[80%]';
-  };
 
   const renderContent = () => {
     if (message.mediaType === 'video') {
@@ -70,7 +60,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, modelId, user
           <img src={getModelAvatar(modelId || '')} alt="AI Model" className="w-full h-full object-cover" />
         )}
       </div>
-      <div className={`flex-1 ${isUser ? getMessageWidth(message.content) : 'max-w-[80%]'} ${
+      <div className={`flex-1 max-w-full ${
         isUser ? 'text-right ml-auto' : 'text-left'
       }`}>
         <div className={`inline-block rounded-lg px-4 py-2 ${

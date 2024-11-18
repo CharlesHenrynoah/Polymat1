@@ -20,7 +20,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           <Bot className="w-5 h-5 text-white" />
         )}
       </div>
-      <div className={`flex-1 max-w-[80%] ${isUser ? 'text-right' : 'text-left'}`}>
+      <div className={`flex-1 max-w-full ${isUser ? 'text-right' : 'text-left'}`}>
         <div className={`inline-block rounded-lg px-4 py-2 max-w-full ${
           isUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'
         }`}>
