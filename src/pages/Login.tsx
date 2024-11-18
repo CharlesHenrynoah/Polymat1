@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import supabase from '../config/configdb';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { FcGoogle } from 'react-icons/fc';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => void;
@@ -17,6 +18,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [connectionStatus, setConnectionStatus] = useState<string>('');
   const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const testConnection = async () => {
@@ -46,9 +48,49 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setIsLoading(true);
     
     try {
-      await onLogin(email, password);
+      const { data: { session }, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Login failed:', error);
+        return;
+      }
+
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.username) {
+          navigate(`/workspace/${profile.username}`);
+        } else {
+          navigate('/signup/level2', { state: { email, id: session.user.id } });
+        }
+      }
     } catch (error) {
       console.error('Login failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Erreur Google Auth:', error);
     } finally {
       setIsLoading(false);
     }
@@ -166,6 +208,27 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             >
               <span>Sign in</span>
               <ArrowRight className="w-5 h-5" />
+            </button>
+
+            {/* Or Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-zinc-800"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-zinc-900/50 text-zinc-400">Or continue with</span>
+              </div>
+            </div>
+
+            {/* Google Sign In */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-white text-gray-800 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FcGoogle className="w-5 h-5" />
+              <span>{isLoading ? 'Chargement...' : 'Continue with Google'}</span>
             </button>
 
             {/* Sign Up Link */}
