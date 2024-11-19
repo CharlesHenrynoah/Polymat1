@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Upload, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Upload, Eye, EyeOff, CheckCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import supabase from '../config/configdb';
 import { DeleteAccountModal } from '../components/Account/DeleteAccountModal';
@@ -25,6 +25,55 @@ interface PasswordSectionProps {
   errors: Record<string, string>;
 }
 
+// Composant Toast modernisé
+const Toast = ({ show, message, onClose }: { show: boolean; message: string; onClose: () => void }) => {
+  useEffect(() => {
+    if (show) {
+      const timer = setTimeout(onClose, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [show, onClose]);
+
+  return (
+    <div 
+      className={`
+        fixed top-0 left-0 right-0 z-50 flex items-center justify-center
+        pointer-events-none
+        ${show ? 'opacity-100' : 'opacity-0 -translate-y-full'}
+        transition-all duration-500 ease-in-out
+      `}
+    >
+      <div
+        className={`
+          transform transition-all duration-500 ease-out
+          ${show ? 'translate-y-4' : '-translate-y-full'}
+          bg-zinc-900/80 backdrop-blur-md
+          border border-zinc-700/50
+          shadow-lg shadow-black/10
+          rounded-lg max-w-sm w-full mx-4
+          p-4 flex items-center gap-3
+          pointer-events-auto
+        `}
+      >
+        <div className="p-1 bg-green-500/10 rounded-full">
+          <CheckCircle className="w-5 h-5 text-green-500" />
+        </div>
+        
+        <p className="text-sm text-white/90 flex-grow font-medium">
+          {message}
+        </p>
+        
+        <button 
+          onClick={onClose}
+          className="p-1 text-zinc-400 hover:text-white transition-colors rounded-full hover:bg-zinc-800/50"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const PasswordSection: React.FC<PasswordSectionProps> = ({
   newPassword,
   confirmPassword,
@@ -34,13 +83,20 @@ const PasswordSection: React.FC<PasswordSectionProps> = ({
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  return (
-    <div className="space-y-4">
-      <h3 className="text-white font-medium mb-4">Change Password</h3>
+  const validatePassword = (pass: string) => ({
+    length: pass.length >= 8,
+    uppercase: /[A-Z]/.test(pass),
+    lowercase: /[a-z]/.test(pass),
+    number: /[0-9]/.test(pass),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(pass),
+  });
 
-      {/* New Password */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-400 mb-1">
+  return (
+    <div className="space-y-3">
+      <h3 className="text-white text-sm font-medium">Change Password</h3>
+
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-zinc-400">
           New Password
         </label>
         <div className="relative">
@@ -50,28 +106,36 @@ const PasswordSection: React.FC<PasswordSectionProps> = ({
             onChange={(e) => onChange("newPassword", e.target.value)}
             className={`w-full bg-zinc-900 border ${
               errors.newPassword ? "border-red-500" : "border-zinc-700"
-            } rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500`}
+            } rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-orange-500`}
           />
           <button
             type="button"
             onClick={() => setShowNewPassword(!showNewPassword)}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
           >
-            {showNewPassword ? (
-              <EyeOff className="w-4 h-4" />
-            ) : (
-              <Eye className="w-4 h-4" />
-            )}
+            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
-        {errors.newPassword && (
-          <p className="mt-1 text-sm text-red-500">{errors.newPassword}</p>
+
+        {newPassword && (
+          <div className="mt-1.5">
+            <div className="text-[10px] flex flex-wrap gap-x-3 gap-y-1">
+              {Object.entries(validatePassword(newPassword)).map(([key, valid]) => (
+                <div key={key} className={`${valid ? 'text-green-500' : 'text-zinc-500'}`}>
+                  {key === 'length' ? '8+ chars' :
+                   key === 'uppercase' ? 'Uppercase' :
+                   key === 'lowercase' ? 'Lowercase' :
+                   key === 'number' ? 'Number' : 'Special char'}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Confirm Password */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-400 mb-1">
+      {/* Confirm Password - similar styling updates */}
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-zinc-400">
           Confirm Password
         </label>
         <div className="relative">
@@ -81,18 +145,14 @@ const PasswordSection: React.FC<PasswordSectionProps> = ({
             onChange={(e) => onChange("confirmPassword", e.target.value)}
             className={`w-full bg-zinc-900 border ${
               errors.confirmPassword ? "border-red-500" : "border-zinc-700"
-            } rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500`}
+            } rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-orange-500`}
           />
           <button
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
           >
-            {showConfirmPassword ? (
-              <EyeOff className="w-4 h-4" />
-            ) : (
-              <Eye className="w-4 h-4" />
-            )}
+            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
         {errors.confirmPassword && (
@@ -127,7 +187,7 @@ export const MyAccount: React.FC<MyAccountProps> = ({
     newPassword: '',
     confirmPassword: '',
   });
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // Pe098
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -249,8 +309,12 @@ export const MyAccount: React.FC<MyAccountProps> = ({
       }
 
       onSave(formData.username, formData.profileImage);
-      setShowSuccessPopup(true); // Pe098
-      setTimeout(() => setShowSuccessPopup(false), 3000); // Pe098
+      setFormData(prev => ({
+        ...prev,
+        newPassword: '',
+        confirmPassword: ''
+      }));
+      setShowToast(true);
     } catch (error) {
       console.error('Error updating:', error);
       setErrors(prev => ({
@@ -292,7 +356,34 @@ export const MyAccount: React.FC<MyAccountProps> = ({
     return <DeleteAccountReason onBack={() => setShowDeleteReason(false)} onConfirm={handleReasonSubmit} />;
   }
 
-  const isFormValid = Object.keys(errors).length === 0;
+  const isFormValid = () => {
+    // Check if there are any empty required fields
+    const requiredFields = {
+      username: formData.username,
+      firstName: formData.firstName,
+      lastName: formData.lastName
+    };
+
+    const hasEmptyRequired = Object.values(requiredFields).some(val => !val);
+    if (hasEmptyRequired) return false;
+
+    // Only validate password if user is trying to change it
+    if (formData.newPassword || formData.confirmPassword) {
+      const passwordValidation = {
+        length: formData.newPassword.length >= 8,
+        uppercase: /[A-Z]/.test(formData.newPassword),
+        lowercase: /[a-z]/.test(formData.newPassword),
+        number: /[0-9]/.test(formData.newPassword),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword),
+        match: formData.newPassword === formData.confirmPassword
+      };
+      
+      return Object.values(passwordValidation).every(Boolean);
+    }
+
+    // If not changing password, form is valid
+    return true;
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -322,9 +413,9 @@ export const MyAccount: React.FC<MyAccountProps> = ({
               </button>
               <button
                 onClick={handleSave}
-                disabled={!isFormValid || isLoading}
+                disabled={!isFormValid() || isLoading}
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  isFormValid && !isLoading
+                  isFormValid() && !isLoading
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
                 }`}
@@ -407,14 +498,11 @@ export const MyAccount: React.FC<MyAccountProps> = ({
         />
       )}
 
-      {showSuccessPopup && ( // Pe098
-        <div className="fixed inset-0 flex items-center justify-center z-50"> // Pe098
-          <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800"> // Pe098
-            <h2 className="text-xl font-semibold text-white mb-4">Success</h2> // Pe098
-            <p className="text-zinc-300">Your information has been updated successfully.</p> // Pe098
-          </div> // Pe098
-        </div> // Pe098
-      )} // Pe098
+      <Toast 
+        show={showToast}
+        message="Your changes have been saved successfully"
+        onClose={() => setShowToast(false)}
+      />
     </div>
   );
 };
