@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import AuthCallback from './pages/auth/callback';
@@ -7,11 +7,13 @@ import { SignupLevel2 } from './pages/SignupFlow/SignupLevel2';
 import { Login } from './pages/Login';
 import { Navigate } from 'react-router-dom';
 import { Workspace } from './pages/Workspace';
+import { MyAccount } from './pages/MyAccount';
+import supabase from './config/configdb';
 
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <Router>
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/signup" element={<SignupFlow />} />
@@ -51,11 +53,10 @@ function App() {
                   .select('*')
                   .eq('id', session.user.id)
                   .single();
-
                 if (profile?.username) {
-                  navigate(`/workspace/${profile.username}`);
+                  return <Navigate to={`/workspace/${profile.username}`} />;
                 } else {
-                  navigate('/signup/level2', { state: { email, id: session.user.id } });
+                  return <Navigate to="/signup/level2" state={{ email, id: session.user.id }} />;
                 }
               }
             } catch (error) {
@@ -71,8 +72,21 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route
+            path="/myaccount"
+            element={
+              <ProtectedRoute>
+                <MyAccount 
+                  username=""
+                  profileImage=""
+                  onBack={() => {}}
+                  onSave={() => {}}
+                />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
-      </BrowserRouter>
+      </Router>
     </AuthProvider>
   );
 }
