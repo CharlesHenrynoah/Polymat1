@@ -12,6 +12,7 @@ interface UserMenuProps {
 export const UserMenu: React.FC<UserMenuProps> = ({
   onSignOut,
   profileImage,
+  username,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -45,7 +46,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         <div className="absolute right-0 mt-2 w-48 bg-zinc-900 rounded-lg shadow-lg py-1 z-50 border border-zinc-800">
           <button
             onClick={() => {
-              navigate('/myaccount');
+              navigate('/myaccount', { state: { username, profileImage } });
               setIsOpen(false);
             }}
             className="w-full px-4 py-2 text-left flex items-center gap-2 hover:bg-zinc-800 text-zinc-200 hover:text-orange-500 transition-colors"

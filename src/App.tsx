@@ -7,6 +7,7 @@ import { SignupLevel2 } from './pages/SignupFlow/SignupLevel2';
 import { Login } from './pages/Login';
 import { Navigate } from 'react-router-dom';
 import { Workspace } from './pages/Workspace';
+import { MyAccount } from './pages/MyAccount';
 
 function App() {
   return (
@@ -68,6 +69,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Workspace />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/myaccount" 
+            element={
+              <ProtectedRoute>
+                <MyAccount 
+                  username={user?.username || ''} 
+                  profileImage={user?.profileImage || ''} 
+                  onBack={() => navigate(-1)} 
+                  onSave={(username, profileImage) => {
+                    // TODO: Implement save logic
+                    console.log('Account saved:', { username, profileImage });
+                  }} 
+                />
               </ProtectedRoute>
             } 
           />
