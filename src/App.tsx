@@ -1,21 +1,19 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import AuthCallback from './pages/auth/callback';
 import { SignupData, SignupFlow } from './pages/SignupFlow';
 import { SignupLevel2 } from './pages/SignupFlow/SignupLevel2';
 import { Login } from './pages/Login';
+import { Navigate } from 'react-router-dom';
 import { Workspace } from './pages/Workspace';
 import { MyAccount } from './pages/MyAccount';
-import { useAuth } from './contexts/AuthContext';
 import supabase from './config/configdb';
 
 function App() {
-  const { user } = useAuth();
-
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <Router>
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/signup" element={<SignupFlow />} />
@@ -26,9 +24,11 @@ function App() {
                 <SignupLevel2 
                   data={{}} 
                   onComplete={(data: SignupData) => {
+                    // TODO: Implement signup completion logic
                     console.log('Signup completed:', data);
                   }}
                   onBack={() => {
+                    // TODO: Implement back navigation
                     console.log('Going back');
                   }}
                 />
@@ -53,11 +53,10 @@ function App() {
                   .select('*')
                   .eq('id', session.user.id)
                   .single();
-
                 if (profile?.username) {
-                  navigate(`/workspace/${profile.username}`);
+                  return <Navigate to={`/workspace/${profile.username}`} />;
                 } else {
-                  navigate('/signup/level2', { state: { email, id: session.user.id } });
+                  return <Navigate to="/signup/level2" state={{ email, id: session.user.id }} />;
                 }
               }
             } catch (error) {
@@ -73,30 +72,21 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/myaccount" 
+          <Route
+            path="/myaccount"
             element={
               <ProtectedRoute>
                 <MyAccount 
-                  username={user?.username || ''} 
-                  profileImage={user?.profileImage || ''}
-                  onBack={() => navigate(-1)} 
-                  onSave={(username, profileImage) => {
-                    // TODO: Implement save logic
-                    console.log('Account saved:', { username, profileImage });
-                  }} 
-
-                  onBack={() => navigate('/workspace')}
-                  onSave={(username, profileImage) => {
-                    console.log('Saved:', { username, profileImage });
-                  }}
+                  username=""
+                  profileImage=""
+                  onBack={() => {}}
+                  onSave={() => {}}
                 />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
-      </BrowserRouter>
+      </Router>
     </AuthProvider>
   );
 }

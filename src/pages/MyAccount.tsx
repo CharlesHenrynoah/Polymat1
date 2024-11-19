@@ -1,5 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { ArrowLeft, Upload } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Upload, Eye, EyeOff, CheckCircle, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import supabase from '../config/configdb';
 import { DeleteAccountModal } from '../components/Account/DeleteAccountModal';
 import { DeleteAccountReason } from '../components/Account/DeleteAccountReason';
 import { birthPlaces } from '../data/birthPlaces';
@@ -7,61 +9,235 @@ import { sectors } from '../data/sectors';
 import { countryCodes } from '../data/countries';
 import { PhoneInput } from '../components/Account/PhoneInput';
 import { PersonalInfo } from '../components/Account/PersonalInfo';
-import { PasswordSection } from '../components/Account/PasswordSection';
-
-import { useLocation } from 'react-router-dom';
-
-import supabase from '../config/configdb';
+import { ErrorMessage } from '../components/ErrorMessage'; // Pe098
 
 interface MyAccountProps {
-  user: {
-    username: string;
-    profileImage: string;
-    firstName: string;
-    lastName: string;
-    description: string;
-    sector: string;
-    birthDate: string;
-    birthPlace: string;
-    countryCode: string;
-    phoneNumber: string;
-  };
+  username: string;
+  profileImage: string;
   onBack: () => void;
-  onSave: (user: MyAccountProps['user']) => void;
+  onSave: (username: string, profileImage: string) => void;
 }
 
+interface PasswordSectionProps {
+  newPassword: string;
+  confirmPassword: string;
+  onChange: (field: string, value: string) => void;
+  errors: Record<string, string>;
+}
+
+// Composant Toast modernisé
+const Toast = ({ show, message, onClose }: { show: boolean; message: string; onClose: () => void }) => {
+  useEffect(() => {
+    if (show) {
+      const timer = setTimeout(onClose, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [show, onClose]);
+
+  return (
+    <div 
+      className={`
+        fixed top-0 left-0 right-0 z-50 flex items-center justify-center
+        pointer-events-none
+        ${show ? 'opacity-100' : 'opacity-0 -translate-y-full'}
+        transition-all duration-500 ease-in-out
+      `}
+    >
+      <div
+        className={`
+          transform transition-all duration-500 ease-out
+          ${show ? 'translate-y-4' : '-translate-y-full'}
+          bg-zinc-900/80 backdrop-blur-md
+          border border-zinc-700/50
+          shadow-lg shadow-black/10
+          rounded-lg max-w-sm w-full mx-4
+          p-4 flex items-center gap-3
+          pointer-events-auto
+        `}
+      >
+        <div className="p-1 bg-green-500/10 rounded-full">
+          <CheckCircle className="w-5 h-5 text-green-500" />
+        </div>
+        
+        <p className="text-sm text-white/90 flex-grow font-medium">
+          {message}
+        </p>
+        
+        <button 
+          onClick={onClose}
+          className="p-1 text-zinc-400 hover:text-white transition-colors rounded-full hover:bg-zinc-800/50"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const PasswordSection: React.FC<PasswordSectionProps> = ({
+  newPassword,
+  confirmPassword,
+  onChange,
+  errors
+}) => {
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const validatePassword = (pass: string) => ({
+    length: pass.length >= 8,
+    uppercase: /[A-Z]/.test(pass),
+    lowercase: /[a-z]/.test(pass),
+    number: /[0-9]/.test(pass),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(pass),
+  });
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-white text-sm font-medium">Change Password</h3>
+
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-zinc-400">
+          New Password
+        </label>
+        <div className="relative">
+          <input
+            type={showNewPassword ? "text" : "password"}
+            value={newPassword}
+            onChange={(e) => onChange("newPassword", e.target.value)}
+            className={`w-full bg-zinc-900 border ${
+              errors.newPassword ? "border-red-500" : "border-zinc-700"
+            } rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-orange-500`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowNewPassword(!showNewPassword)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+          >
+            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {newPassword && (
+          <div className="mt-1.5">
+            <div className="text-[10px] flex flex-wrap gap-x-3 gap-y-1">
+              {Object.entries(validatePassword(newPassword)).map(([key, valid]) => (
+                <div key={key} className={`${valid ? 'text-green-500' : 'text-zinc-500'}`}>
+                  {key === 'length' ? '8+ chars' :
+                   key === 'uppercase' ? 'Uppercase' :
+                   key === 'lowercase' ? 'Lowercase' :
+                   key === 'number' ? 'Number' : 'Special char'}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Confirm Password - similar styling updates */}
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-zinc-400">
+          Confirm Password
+        </label>
+        <div className="relative">
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => onChange("confirmPassword", e.target.value)}
+            className={`w-full bg-zinc-900 border ${
+              errors.confirmPassword ? "border-red-500" : "border-zinc-700"
+            } rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-orange-500`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+          >
+            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+        {errors.confirmPassword && (
+          <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const MyAccount: React.FC<MyAccountProps> = ({
-  user,
   onBack,
   onSave,
 }) => {
-  const location = useLocation();
-  const { username, profileImage } = location.state || { username: '', profileImage: '' };
-
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteReason, setShowDeleteReason] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [formData, setFormData] = useState({
-    username: user.username,
-    profileImage: user.profileImage,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    description: user.description,
-    sector: user.sector,
-    birthDate: user.birthDate,
-    birthPlace: user.birthPlace,
-    countryCode: user.countryCode,
-    phoneNumber: user.phoneNumber,
-    oldPassword: '',
+    username: '',
+    profileImage: '',
+    firstName: '',
+    lastName: '',
+    description: '',
+    sector: '',
+    birthDate: '',
+    birthPlace: '',
+    countryCode: '',
+    phoneNumber: '',
     newPassword: '',
     confirmPassword: '',
   });
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) {
+          navigate('/login');
+          return;
+        }
+
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error) throw error;
+
+        const profileImageUrl = user.profile_image 
+          ? user.profile_image.startsWith('data:') 
+            ? user.profile_image 
+            : `${user.profile_image}?${new Date().getTime()}`
+          : '/default-avatar.png';
+
+        setFormData({
+          username: user.username || '',
+          profileImage: profileImageUrl,
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          description: user.description || '',
+          sector: user.sector || '',
+          birthDate: user.birth_date || '',
+          birthPlace: user.birth_place || '',
+          countryCode: user.country_code || '',
+          phoneNumber: user.phone_number || '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [navigate]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when field is modified
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -74,29 +250,7 @@ export const MyAccount: React.FC<MyAccountProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Required fields validation
-    const requiredFields = {
-      username: 'Username',
-      firstName: 'First Name',
-      lastName: 'Last Name',
-      description: 'Description',
-      sector: 'Industry',
-      birthDate: 'Date of Birth',
-      birthPlace: 'Place of Birth',
-      phoneNumber: 'Phone Number',
-    };
-
-    Object.entries(requiredFields).forEach(([field, label]) => {
-      if (!formData[field as keyof typeof formData]?.trim()) {
-        newErrors[field] = `${label} is required`;
-      }
-    });
-
-    // Password validation
     if (formData.newPassword || formData.confirmPassword) {
-      if (!formData.oldPassword) {
-        newErrors.oldPassword = 'Current password is required to change password';
-      }
       if (formData.newPassword !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Passwords do not match';
       }
@@ -105,8 +259,7 @@ export const MyAccount: React.FC<MyAccountProps> = ({
       }
     }
 
-    // Phone number validation
-    if (!/^\d[\d\s-]*$/.test(formData.phoneNumber)) {
+    if (formData.phoneNumber && !/^\d[\d\s-]*$/.test(formData.phoneNumber)) {
       newErrors.phoneNumber = 'Invalid phone number format';
     }
 
@@ -116,51 +269,60 @@ export const MyAccount: React.FC<MyAccountProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      try {
-        const { error } = await supabase
-          .from('users')
-          .update({
-            username: formData.username,
-            profile_image: formData.profileImage,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            description: formData.description,
-            sector: formData.sector,
-            birth_date: formData.birthDate,
-            birth_place: formData.birthPlace,
-            country_code: formData.countryCode,
-            phone_number: formData.phoneNumber,
-          })
-          .eq('id', user.id);
-
-        if (error) {
-          throw error;
-        }
-
-        onSave({
-          username: formData.username,
-          profileImage: formData.profileImage,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          description: formData.description,
-          sector: formData.sector,
-          birthDate: formData.birthDate,
-          birthPlace: formData.birthPlace,
-          countryCode: formData.countryCode,
-          phoneNumber: formData.phoneNumber,
-        });
-
-        alert('Changes saved successfully!');
-      } catch (error) {
-        console.error('Error saving changes:', error);
-        alert('Failed to save changes. Please try again.');
-      }
-    } else {
-      // Scroll to first error
+    if (!validateForm()) {
       const firstErrorField = document.querySelector('[data-error="true"]');
       firstErrorField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    
+    setIsLoading(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error('No user session');
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          username: formData.username,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          description: formData.description,
+          sector: formData.sector,
+          birth_date: formData.birthDate,
+          birth_place: formData.birthPlace,
+          phone_number: formData.phoneNumber,
+          country_code: formData.countryCode,
+          profile_image: formData.profileImage,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', session.user.id);
+
+      if (updateError) throw updateError;
+
+      if (formData.newPassword) {
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: formData.newPassword
+        });
+
+        if (passwordError) throw passwordError;
+      }
+
+      onSave(formData.username, formData.profileImage);
+      setFormData(prev => ({
+        ...prev,
+        newPassword: '',
+        confirmPassword: ''
+      }));
+      setShowToast(true);
+    } catch (error) {
+      console.error('Error updating:', error);
+      setErrors(prev => ({
+        ...prev,
+        submit: 'Failed to update profile'
+      }));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -177,8 +339,12 @@ export const MyAccount: React.FC<MyAccountProps> = ({
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setFormData(prev => ({ ...prev, profileImage: imageUrl }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData(prev => ({ ...prev, profileImage: base64String }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -190,7 +356,38 @@ export const MyAccount: React.FC<MyAccountProps> = ({
     return <DeleteAccountReason onBack={() => setShowDeleteReason(false)} onConfirm={handleReasonSubmit} />;
   }
 
-  const isFormValid = Object.keys(errors).length === 0 && Object.values(formData).every(value => value !== '');
+  const isFormValid = () => {
+    // Check if there are any empty required fields
+    const requiredFields = {
+      username: formData.username,
+      firstName: formData.firstName,
+      lastName: formData.lastName
+    };
+
+    const hasEmptyRequired = Object.values(requiredFields).some(val => !val);
+    if (hasEmptyRequired) return false;
+
+    // Only validate password if user is trying to change it
+    if (formData.newPassword || formData.confirmPassword) {
+      const passwordValidation = {
+        length: formData.newPassword.length >= 8,
+        uppercase: /[A-Z]/.test(formData.newPassword),
+        lowercase: /[a-z]/.test(formData.newPassword),
+        number: /[0-9]/.test(formData.newPassword),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword),
+        match: formData.newPassword === formData.confirmPassword
+      };
+      
+      return Object.values(passwordValidation).every(Boolean);
+    }
+
+    // If not changing password, form is valid
+    return true;
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-black">
@@ -216,14 +413,14 @@ export const MyAccount: React.FC<MyAccountProps> = ({
               </button>
               <button
                 onClick={handleSave}
-                disabled={!isFormValid}
+                disabled={!isFormValid() || isLoading}
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  isFormValid
+                  isFormValid() && !isLoading
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
                 }`}
               >
-                Save Changes
+                {isLoading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -258,7 +455,6 @@ export const MyAccount: React.FC<MyAccountProps> = ({
                 {/* Password Section */}
                 <div className="bg-zinc-800/50 rounded-lg p-4">
                   <PasswordSection
-                    oldPassword={formData.oldPassword}
                     newPassword={formData.newPassword}
                     confirmPassword={formData.confirmPassword}
                     onChange={handleChange}
@@ -301,6 +497,12 @@ export const MyAccount: React.FC<MyAccountProps> = ({
           onCancel={() => setShowDeleteModal(false)}
         />
       )}
+
+      <Toast 
+        show={showToast}
+        message="Your changes have been saved successfully"
+        onClose={() => setShowToast(false)}
+      />
     </div>
   );
 };
