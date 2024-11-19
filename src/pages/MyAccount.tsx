@@ -8,6 +8,7 @@ import { countryCodes } from '../data/countries';
 import { PhoneInput } from '../components/Account/PhoneInput';
 import { PersonalInfo } from '../components/Account/PersonalInfo';
 import { PasswordSection } from '../components/Account/PasswordSection';
+import { useLocation } from 'react-router-dom';
 
 interface MyAccountProps {
   username: string;
@@ -22,6 +23,9 @@ export const MyAccount: React.FC<MyAccountProps> = ({
   onBack,
   onSave,
 }) => {
+  const location = useLocation();
+  const { username, profileImage } = location.state || { username: '', profileImage: '' };
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteReason, setShowDeleteReason] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
