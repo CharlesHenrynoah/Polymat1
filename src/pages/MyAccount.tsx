@@ -8,18 +8,30 @@ import { countryCodes } from '../data/countries';
 import { PhoneInput } from '../components/Account/PhoneInput';
 import { PersonalInfo } from '../components/Account/PersonalInfo';
 import { PasswordSection } from '../components/Account/PasswordSection';
+
 import { useLocation } from 'react-router-dom';
 
+import supabase from '../config/configdb';
+
 interface MyAccountProps {
-  username: string;
-  profileImage: string;
+  user: {
+    username: string;
+    profileImage: string;
+    firstName: string;
+    lastName: string;
+    description: string;
+    sector: string;
+    birthDate: string;
+    birthPlace: string;
+    countryCode: string;
+    phoneNumber: string;
+  };
   onBack: () => void;
-  onSave: (username: string, profileImage: string) => void;
+  onSave: (user: MyAccountProps['user']) => void;
 }
 
 export const MyAccount: React.FC<MyAccountProps> = ({
-  username: initialUsername,
-  profileImage: initialProfileImage,
+  user,
   onBack,
   onSave,
 }) => {
@@ -32,16 +44,16 @@ export const MyAccount: React.FC<MyAccountProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    username: initialUsername,
-    profileImage: initialProfileImage,
-    firstName: 'John',
-    lastName: 'Doe',
-    description: 'Passionate Developer',
-    sector: sectors[0],
-    birthDate: '1990-01-01',
-    birthPlace: birthPlaces.africa[0],
-    countryCode: countryCodes[0].code,
-    phoneNumber: '6 12 34 56 78',
+    username: user.username,
+    profileImage: user.profileImage,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    description: user.description,
+    sector: user.sector,
+    birthDate: user.birthDate,
+    birthPlace: user.birthPlace,
+    countryCode: user.countryCode,
+    phoneNumber: user.phoneNumber,
     oldPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -102,14 +114,49 @@ export const MyAccount: React.FC<MyAccountProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
-      // Save changes
-      onSave(formData.username, formData.profileImage);
-      // Show success message
-      alert('Changes saved successfully!');
+      try {
+        const { error } = await supabase
+          .from('users')
+          .update({
+            username: formData.username,
+            profile_image: formData.profileImage,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            description: formData.description,
+            sector: formData.sector,
+            birth_date: formData.birthDate,
+            birth_place: formData.birthPlace,
+            country_code: formData.countryCode,
+            phone_number: formData.phoneNumber,
+          })
+          .eq('id', user.id);
+
+        if (error) {
+          throw error;
+        }
+
+        onSave({
+          username: formData.username,
+          profileImage: formData.profileImage,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          description: formData.description,
+          sector: formData.sector,
+          birthDate: formData.birthDate,
+          birthPlace: formData.birthPlace,
+          countryCode: formData.countryCode,
+          phoneNumber: formData.phoneNumber,
+        });
+
+        alert('Changes saved successfully!');
+      } catch (error) {
+        console.error('Error saving changes:', error);
+        alert('Failed to save changes. Please try again.');
+      }
     } else {
       // Scroll to first error
       const firstErrorField = document.querySelector('[data-error="true"]');
