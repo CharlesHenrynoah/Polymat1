@@ -14,6 +14,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   onMyAccount,
   username,
   profileImage,
+  username,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -47,6 +48,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         <div className="absolute right-0 mt-2 w-48 bg-zinc-900 rounded-lg shadow-lg py-1 z-50 border border-zinc-800">
           <button
             onClick={() => {
+
+              navigate('/myaccount', { state: { username, profileImage } });
               onMyAccount();
               navigate('/myaccount');
               setIsOpen(false);

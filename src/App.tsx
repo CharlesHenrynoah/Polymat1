@@ -79,7 +79,13 @@ function App() {
               <ProtectedRoute>
                 <MyAccount 
                   username={user?.username || ''} 
-                  profileImage={user?.profileImage || ''} 
+                  profileImage={user?.profileImage || ''}
+                  onBack={() => navigate(-1)} 
+                  onSave={(username, profileImage) => {
+                    // TODO: Implement save logic
+                    console.log('Account saved:', { username, profileImage });
+                  }} 
+
                   onBack={() => navigate('/workspace')}
                   onSave={(username, profileImage) => {
                     console.log('Saved:', { username, profileImage });
