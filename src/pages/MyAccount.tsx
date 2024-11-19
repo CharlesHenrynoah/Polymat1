@@ -9,6 +9,7 @@ import { sectors } from '../data/sectors';
 import { countryCodes } from '../data/countries';
 import { PhoneInput } from '../components/Account/PhoneInput';
 import { PersonalInfo } from '../components/Account/PersonalInfo';
+import { ErrorMessage } from '../components/ErrorMessage'; // Pe098
 
 interface MyAccountProps {
   username: string;
@@ -126,6 +127,7 @@ export const MyAccount: React.FC<MyAccountProps> = ({
     newPassword: '',
     confirmPassword: '',
   });
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // Pe098
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -247,7 +249,8 @@ export const MyAccount: React.FC<MyAccountProps> = ({
       }
 
       onSave(formData.username, formData.profileImage);
-      alert('Changes saved successfully!');
+      setShowSuccessPopup(true); // Pe098
+      setTimeout(() => setShowSuccessPopup(false), 3000); // Pe098
     } catch (error) {
       console.error('Error updating:', error);
       setErrors(prev => ({
@@ -272,8 +275,12 @@ export const MyAccount: React.FC<MyAccountProps> = ({
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setFormData(prev => ({ ...prev, profileImage: imageUrl }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData(prev => ({ ...prev, profileImage: base64String }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -399,6 +406,15 @@ export const MyAccount: React.FC<MyAccountProps> = ({
           onCancel={() => setShowDeleteModal(false)}
         />
       )}
+
+      {showSuccessPopup && ( // Pe098
+        <div className="fixed inset-0 flex items-center justify-center z-50"> // Pe098
+          <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800"> // Pe098
+            <h2 className="text-xl font-semibold text-white mb-4">Success</h2> // Pe098
+            <p className="text-zinc-300">Your information has been updated successfully.</p> // Pe098
+          </div> // Pe098
+        </div> // Pe098
+      )} // Pe098
     </div>
   );
 };
