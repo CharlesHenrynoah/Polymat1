@@ -397,7 +397,7 @@ export const MyAccount: React.FC<MyAccountProps> = ({
           <div className="flex items-center justify-between p-6 border-b border-zinc-800">
             <div className="flex items-center gap-4">
               <button
-                onClick={onBack}
+                onClick={() => navigate(`/workspace/${formData.username}`)}
                 className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-orange-500"
               >
                 <ArrowLeft className="w-5 h-5" />

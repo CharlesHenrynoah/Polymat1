@@ -77,9 +77,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <MyAccount 
-                  username=""
-                  profileImage=""
-                  onBack={() => {}}
+                  username={user?.username || ''}
+                  profileImage={user?.profileImage || ''}
+                  onBack={() => navigate(`/workspace/${user?.username}`)}
                   onSave={() => {}}
                 />
               </ProtectedRoute>
