@@ -336,15 +336,52 @@ export const MyAccount: React.FC<MyAccountProps> = ({
     onBack();
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFormData(prev => ({ ...prev, profileImage: base64String }));
-      };
-      reader.readAsDataURL(file);
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file) return;
+  
+      // Vérifier la taille du fichier (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        setErrors(prev => ({
+          ...prev,
+          image: 'Image size should be less than 2MB'
+        }));
+        return;
+      }
+  
+      setIsLoading(true);
+  
+      // 1. Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `profile-images/${fileName}`;
+  
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+  
+      if (uploadError) throw uploadError;
+  
+      // 2. Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+  
+      // 3. Update form data with the public URL
+      setFormData(prev => ({
+        ...prev,
+        profileImage: publicUrl
+      }));
+  
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setErrors(prev => ({
+        ...prev,
+        image: 'Failed to upload image'
+      }));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -397,7 +434,7 @@ export const MyAccount: React.FC<MyAccountProps> = ({
           <div className="flex items-center justify-between p-6 border-b border-zinc-800">
             <div className="flex items-center gap-4">
               <button
-                onClick={onBack}
+                onClick={() => navigate(`/workspace/${formData.username}`)}
                 className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-orange-500"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -432,7 +469,7 @@ export const MyAccount: React.FC<MyAccountProps> = ({
                 <div className="text-center">
                   <div className="relative inline-block">
                     <img
-                      src={formData.profileImage}
+                      src={formData.profileImage || '/default-avatar.png'}
                       alt="Profile"
                       className="w-40 h-40 rounded-full object-cover border-4 border-zinc-800"
                     />
@@ -446,10 +483,18 @@ export const MyAccount: React.FC<MyAccountProps> = ({
                     <button
                       className="absolute bottom-2 right-2 p-2 bg-orange-500 rounded-full text-white hover:bg-orange-600 transition-colors"
                       onClick={triggerImageUpload}
+                      disabled={isLoading}
                     >
-                      <Upload className="w-4 h-4" />
+                      {isLoading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
+                  {errors.image && (
+                    <p className="mt-2 text-sm text-red-500">{errors.image}</p>
+                  )}
                 </div>
 
                 {/* Password Section */}
