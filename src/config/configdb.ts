@@ -33,4 +33,44 @@ async function testSupabaseConnection() {
 // Exécuter le test
 testSupabaseConnection()
 
+// Fetch conversations from the database
+export async function fetchConversations(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching conversations:', error.message);
+      return [];
+    }
+
+    return data;
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    return [];
+  }
+}
+
+// Store a new conversation in the database
+export async function storeConversation(conversation: any) {
+  try {
+    const { error } = await supabase
+      .from('conversations')
+      .insert([conversation]);
+
+    if (error) {
+      console.error('Error storing conversation:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    return false;
+  }
+}
+
 export default supabase

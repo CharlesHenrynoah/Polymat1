@@ -11,6 +11,7 @@ import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase from '../config/configdb';
+import { TextToCodeModel } from '../models/TextToCodeModel';
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -126,11 +127,18 @@ export const Workspace: React.FC = () => {
     setCurrentConversation(updatedConversation as Conversation);
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    const textToCodeModel = new TextToCodeModel(
+      process.env.API_URL || '',
+      process.env.API_KEY || '',
+      'text-to-code-model',
+      { /* apiConfig */ }
+    );
+
+    try {
+      const processedMessage = await textToCodeModel.processTextToCode(content);
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
-        content: `Response from ${selectedModel?.name}`,
+        content: processedMessage,
         role: 'assistant',
         timestamp: new Date(),
         modelId: selectedModelId,
@@ -157,8 +165,11 @@ export const Workspace: React.FC = () => {
           conv.id === activeConversation.id ? finalConversation as Conversation : conv
       ));
       setCurrentConversation(finalConversation as Conversation);
+    } catch (error) {
+      console.error('Error processing text to code:', error);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleDeleteConversation = (id: string) => {

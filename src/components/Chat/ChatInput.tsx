@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Send, Paperclip, Mic, Sparkles } from 'lucide-react';
 import { PromptHelper } from './PromptHelper';
 import { TranscribeModal } from './TranscribeModal';
+import { TextToCodeModel } from '../../models/TextToCodeModel';
 
 interface ChatInputProps {
   onSendMessage: (message: string, attachments?: File[]) => void;
@@ -24,10 +25,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const textToCodeModel = new TextToCodeModel(
+    process.env.API_URL || '',
+    process.env.API_KEY || '',
+    'text-to-code-model',
+    { /* apiConfig */ }
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((message.trim() || attachments.length > 0) && !isOverCharacterLimit) {
-      onSendMessage(message.trim(), attachments);
+      const processedMessage = await textToCodeModel.processTextToCode(message.trim());
+      onSendMessage(processedMessage, attachments);
       setMessage('');
       setAttachments([]);
     }
