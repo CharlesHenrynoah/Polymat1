@@ -183,10 +183,11 @@ export const Workspace: React.FC = () => {
 
   return (
     <div className="h-screen flex overflow-hidden bg-[#050505]">
+      {/* Masquer la barre de progression mais garder le comportement */}
       <div
         className={`bg-[#0A0A0A] border-r border-[#151515] flex flex-col transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'w-0' : 'w-80'
-        }`}
+          isSidebarCollapsed ? 'w-0 opacity-0' : 'w-80 opacity-100'
+        } overflow-hidden`} // Ajout de overflow-hidden
       >
         <ConversationList
           conversations={conversations}
@@ -199,9 +200,10 @@ export const Workspace: React.FC = () => {
         />
       </div>
 
+      {/* Déplacer le bouton de toggle pour qu'il soit toujours visible */}
       <button
         onClick={() => setIsSidebarCollapsed(prev => !prev)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#0A0A0A] p-1.5 rounded-r-lg border border-l-0 border-[#151515] hover:bg-[#151515] transition-colors z-10 text-zinc-400 hover:text-orange-500"
+        className="fixed left-0 top-1/2 -translate-y-1/2 bg-[#0A0A0A] p-1.5 rounded-r-lg border border-l-0 border-[#151515] hover:bg-[#151515] transition-colors z-20 text-zinc-400 hover:text-orange-500"
       >
         {isSidebarCollapsed ? (
           <ChevronRight className="w-5 h-5" />
