@@ -10,9 +10,14 @@ import { Conversation } from '../types/conversation';
 import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
+import supabase from '../config/configdb';
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
+  const [profileData, setProfileData] = useState({
+    username: '',
+    profileImage: '/default-avatar.png'
+  });
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
@@ -21,14 +26,40 @@ export const Workspace: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState('https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&q=80');
-  const [username, setUsername] = useState(user?.username || 'User');
-  const [profileImage, setProfileImage] = useState(user?.profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&h=200&auto=format&fit=crop');
 
   useEffect(() => {
-    if (user) {
-      setUsername(user.username);
-      setProfileImage(user.profileImage);
-    }
+    const fetchUserProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
+
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('username, profile_image')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (userData) {
+          // Utiliser la même logique que MyAccount pour l'URL de l'image
+          const profileImageUrl = userData.profile_image 
+            ? userData.profile_image.startsWith('data:') 
+              ? userData.profile_image 
+              : `${userData.profile_image}?${new Date().getTime()}`
+            : '/default-avatar.png';
+
+          setProfileData({
+            username: userData.username || '',
+            profileImage: profileImageUrl
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchUserProfile();
   }, [user]);
 
   const selectedModel = modelCategories
@@ -211,9 +242,11 @@ export const Workspace: React.FC = () => {
               Change background
             </button>
             <UserMenu 
-              onSignOut={() => {}}
-              username={username}
-              profileImage={profileImage}
+              onSignOut={async () => {
+                await supabase.auth.signOut();
+              }}
+              username={profileData.username}
+              profileImage={profileData.profileImage}
               onMyAccount={() => {}}
             />
           </div>
@@ -236,7 +269,7 @@ export const Workspace: React.FC = () => {
                     key={message.id} 
                     message={message} 
                     modelId={message.modelId || selectedModelId}
-                    userAvatar={profileImage}
+                    userAvatar={profileData.profileImage}
                   />
                 ))
               ) : (

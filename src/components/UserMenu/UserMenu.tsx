@@ -14,7 +14,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   onMyAccount,
   username,
   profileImage,
-  username,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
