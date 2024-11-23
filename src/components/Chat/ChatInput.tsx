@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { Send, Paperclip, Mic, Sparkles } from 'lucide-react';
 import { PromptHelper } from './PromptHelper';
 import { TranscribeModal } from './TranscribeModal';
-import process from 'process'; // P50d9
 
 interface ChatInputProps {
   onSendMessage: (message: string, attachments?: File[]) => void;
@@ -195,7 +194,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       </div>
 
-      {typeof process !== 'undefined' && process.env.NODE_ENV === 'development' && ( // Pff6e, P65de
+      {typeof import.meta !== 'undefined' && import.meta.env.MODE === 'development' && (
         <div className="text-xs text-zinc-500 mt-1">
           <p>Character count: {message.length}</p>
           <p>Attachments: {attachments.length}</p>
