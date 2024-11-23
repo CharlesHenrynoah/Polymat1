@@ -159,6 +159,26 @@ export const Workspace: React.FC = () => {
       ));
       setCurrentConversation(finalConversation as Conversation);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      const errorConversation: Conversation = {
+        ...updatedConversation,
+        messages: [
+          ...updatedConversation.messages,
+          {
+            id: (Date.now() + 1).toString(),
+            content: `Error: ${errorMessage}`,
+            role: 'assistant' as 'assistant',
+            timestamp: new Date(),
+            modelId: selectedModelId,
+          }
+        ]
+      };
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === activeConversation.id ? errorConversation : conv
+        )
+      );
+      setCurrentConversation(errorConversation);
       console.error('Error sending message:', error);
     } finally {
       setIsLoading(false);
