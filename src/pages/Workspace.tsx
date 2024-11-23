@@ -11,7 +11,8 @@ import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase from '../config/configdb';
-import { chatWithBot } from '../services/api'; // P1fdf
+import { chatWithBot } from '../services/api';
+import { query } from '../services/ai'; // Pc66e
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -128,7 +129,7 @@ export const Workspace: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await chatWithBot(content); // P1fdf
+      const response = await query({ inputs: content }); // P2ea9
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
         content: response,
@@ -257,7 +258,7 @@ export const Workspace: React.FC = () => {
           </div>
 
           <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold font-['Orbitron'] text-orange-500 whitespace-nowrap">
-            Polymat
+            Starcoder
           </h1>
 
           <div className="flex items-center gap-4">

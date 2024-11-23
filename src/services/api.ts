@@ -41,6 +41,9 @@ export const chatWithBot = async (message: string): Promise<string> => {
           errorData?.error || 'Invalid request format or content'
         );
       }
+      if (response.status === 401) {
+        throw new Error('Invalid API token. Please check your token and try again.');
+      }
       throw new Error(`Server error: ${response.status}`);
     }
 

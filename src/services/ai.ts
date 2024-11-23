@@ -28,3 +28,19 @@ export async function getChatResponse(message: string): Promise<string> {
     throw new Error('Impossible de communiquer avec l\'IA pour le moment.');
   }
 }
+
+export async function query(data: any): Promise<any> {
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/bigcode/starcoder",
+    {
+      headers: {
+        Authorization: "Bearer hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+  const result = await response.json();
+  return result;
+}
