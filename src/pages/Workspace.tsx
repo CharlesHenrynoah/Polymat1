@@ -12,7 +12,7 @@ import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase from '../config/configdb';
 import { chatWithBot } from '../services/api';
-import { query } from '../services/ai'; // Pc66e
+import { query, getChatResponse } from '../services/ai';
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -28,6 +28,7 @@ export const Workspace: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState('https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&q=80');
+  const [isStarcoderSelected, setIsStarcoderSelected] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -129,7 +130,13 @@ export const Workspace: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await query({ inputs: content }); // P2ea9
+      let response;
+      if (isStarcoderSelected) {
+        response = await getChatResponse(content);
+      } else {
+        response = await query({ inputs: content });
+      }
+
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
         content: response,
@@ -320,6 +327,7 @@ export const Workspace: React.FC = () => {
           <ModelSelector
             onSelectModel={(modelId) => {
               setSelectedModelId(modelId);
+              setIsStarcoderSelected(modelId === 'starcoder');
               setIsModelSelectorOpen(false);
             }}
             onClose={() => setIsModelSelectorOpen(false)}
