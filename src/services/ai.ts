@@ -1,4 +1,4 @@
-const HF_API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
+const HF_API_URL = "https://api-inference.huggingface.co/models/bigcode/starcoder";
 
 export async function getChatResponse(message: string): Promise<string> {
   try {
@@ -17,9 +17,9 @@ export async function getChatResponse(message: string): Promise<string> {
 
     const data = await response.json();
     
-    // The Blenderbot model returns an array with a single response object
-    if (Array.isArray(data) && data.length > 0) {
-      return data[0].generated_text;
+    // The Starcoder model returns a different response format
+    if (data && data.generated_text) {
+      return data.generated_text;
     }
 
     throw new Error("Format de réponse inattendu");

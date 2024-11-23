@@ -11,6 +11,7 @@ import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase from '../config/configdb';
+import { chatWithBot } from '../services/api'; // P1fdf
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -126,11 +127,11 @@ export const Workspace: React.FC = () => {
     setCurrentConversation(updatedConversation as Conversation);
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await chatWithBot(content); // P1fdf
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
-        content: `Response from ${selectedModel?.name}`,
+        content: response,
         role: 'assistant',
         timestamp: new Date(),
         modelId: selectedModelId,
@@ -157,8 +158,11 @@ export const Workspace: React.FC = () => {
           conv.id === activeConversation.id ? finalConversation as Conversation : conv
       ));
       setCurrentConversation(finalConversation as Conversation);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleDeleteConversation = (id: string) => {

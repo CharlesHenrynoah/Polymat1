@@ -1,4 +1,4 @@
-const API_URL = 'https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill';
+const API_URL = 'https://api-inference.huggingface.co/models/bigcode/starcoder';
 
 export const chatWithBot = async (message: string): Promise<string> => {
   const apiKey = import.meta.env.VITE_HUGGINGFACE_API_KEY;
@@ -26,11 +26,11 @@ export const chatWithBot = async (message: string): Promise<string> => {
 
     const data = await response.json();
     
-    if (!data[0]?.generated_text) {
-      throw new Error('Invalid response from AI service');
+    if (data && data.generated_text) {
+      return data.generated_text;
     }
 
-    return data[0].generated_text;
+    throw new Error('Invalid response from AI service');
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`AI Service Error: ${error.message}`);
