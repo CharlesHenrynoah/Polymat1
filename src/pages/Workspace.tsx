@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import supabase from '../config/configdb';
 import { chatWithBot } from '../services/api';
 import { query, getChatResponse } from '../services/ai';
+import { ErrorMessage } from '../components/ErrorMessage'; // P1bf9
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -29,6 +30,7 @@ export const Workspace: React.FC = () => {
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState('https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&q=80');
   const [isStarcoderSelected, setIsStarcoderSelected] = useState(false);
+  const [error, setError] = useState<string | null>(null); // P1bf9
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -187,6 +189,7 @@ export const Workspace: React.FC = () => {
         )
       );
       setCurrentConversation(errorConversation);
+      setError(errorMessage); // P1bf9
       console.error('Error sending message:', error);
     } finally {
       setIsLoading(false);
@@ -344,6 +347,16 @@ export const Workspace: React.FC = () => {
           />
         )}
       </div>
+
+      {error && ( // P1bf9
+        <div className="fixed bottom-4 right-4">
+          <ErrorMessage 
+            message={error} 
+            onDismiss={() => setError(null)} 
+            type="error" 
+          />
+        </div>
+      )}
     </div>
   );
 };
