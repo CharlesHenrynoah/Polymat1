@@ -49,11 +49,12 @@ export const chatWithBot = async (message: string): Promise<string> => {
 
     const data = await response.json();
     
-    if (!data || !data.generated_text) {
-      throw new Error('Invalid response format from AI service');
+    // The Starcoder model returns a different response format
+    if (data && data.generated_text) {
+      return data.generated_text;
     }
 
-    return data.generated_text;
+    throw new Error('Invalid response format from AI service');
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`AI Service Error: ${error.message}`);
