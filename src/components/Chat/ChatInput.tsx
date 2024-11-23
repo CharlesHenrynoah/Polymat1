@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Send, Paperclip, Mic, Sparkles } from 'lucide-react';
-import { PromptHelper } from './PromptHelper';
+// Corriger les chemins d'importation
+import { PromptHelper } from './PromptHelper';  
 import { TranscribeModal } from './TranscribeModal';
 
 interface ChatInputProps {
@@ -24,12 +25,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((message.trim() || attachments.length > 0) && !isOverCharacterLimit) {
-      onSendMessage(message.trim(), attachments);
+    if (message.trim().length === 0) {
+      return;
+    }
+    
+    try {
+      await onSendMessage(message.trim(), attachments);
       setMessage('');
       setAttachments([]);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Keep the message in the input if sending failed
     }
   };
 
@@ -194,7 +202,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       </div>
 
-      {typeof import.meta !== 'undefined' && import.meta.env.MODE === 'development' && (
+      {typeof import.meta !== 'undefined' && import.meta.env.DEV && (
         <div className="text-xs text-zinc-500 mt-1">
           <p>Character count: {message.length}</p>
           <p>Attachments: {attachments.length}</p>
