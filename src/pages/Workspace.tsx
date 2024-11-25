@@ -11,7 +11,9 @@ import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase from '../config/configdb';
-import { chatWithBot } from '../services/api'; // P1fdf
+import { chatWithBot } from '../services/api';
+import { query, getChatResponse } from '../services/ai';
+import { ErrorMessage } from '../components/ErrorMessage'; // P1bf9
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -27,6 +29,8 @@ export const Workspace: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState('https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&q=80');
+  const [isStarcoderSelected, setIsStarcoderSelected] = useState(false);
+  const [error, setError] = useState<string | null>(null); // P1bf9
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -128,7 +132,13 @@ export const Workspace: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await chatWithBot(content); // P1fdf
+      let response;
+      if (isStarcoderSelected) {
+        response = await getChatResponse(content);
+      } else {
+        response = await query({ inputs: content });
+      }
+
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
         content: response,
@@ -179,6 +189,7 @@ export const Workspace: React.FC = () => {
         )
       );
       setCurrentConversation(errorConversation);
+      setError(errorMessage); // P1bf9
       console.error('Error sending message:', error);
     } finally {
       setIsLoading(false);
@@ -257,7 +268,7 @@ export const Workspace: React.FC = () => {
           </div>
 
           <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold font-['Orbitron'] text-orange-500 whitespace-nowrap">
-            Polymat
+            Starcoder
           </h1>
 
           <div className="flex items-center gap-4">
@@ -319,6 +330,7 @@ export const Workspace: React.FC = () => {
           <ModelSelector
             onSelectModel={(modelId) => {
               setSelectedModelId(modelId);
+              setIsStarcoderSelected(modelId === 'starcoder');
               setIsModelSelectorOpen(false);
             }}
             onClose={() => setIsModelSelectorOpen(false)}
@@ -335,6 +347,16 @@ export const Workspace: React.FC = () => {
           />
         )}
       </div>
+
+      {error && ( // P1bf9
+        <div className="fixed bottom-4 right-4">
+          <ErrorMessage 
+            message={error} 
+            onDismiss={() => setError(null)} 
+            type="error" 
+          />
+        </div>
+      )}
     </div>
   );
 };

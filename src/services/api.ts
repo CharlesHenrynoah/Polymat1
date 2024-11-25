@@ -41,16 +41,20 @@ export const chatWithBot = async (message: string): Promise<string> => {
           errorData?.error || 'Invalid request format or content'
         );
       }
+      if (response.status === 401) {
+        throw new Error('Invalid API token. Please check your token and try again.');
+      }
       throw new Error(`Server error: ${response.status}`);
     }
 
     const data = await response.json();
     
-    if (!data || !data.generated_text) {
-      throw new Error('Invalid response format from AI service');
+    // The Starcoder model returns a different response format
+    if (data && data.generated_text) {
+      return data.generated_text;
     }
 
-    return data.generated_text;
+    throw new Error('Invalid response format from AI service');
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`AI Service Error: ${error.message}`);

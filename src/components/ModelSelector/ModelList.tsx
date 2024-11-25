@@ -17,6 +17,7 @@ const getModelAvatar = (modelId: string): string => {
     'multimodal-1': 'https://images.unsplash.com/photo-1675426513824-77813readf13?w=120&h=120&auto=format&fit=crop&q=80',
     'image-to-image-1': 'https://images.unsplash.com/photo-1677442135426-5a23b266235c?w=120&h=120&auto=format&fit=crop&q=80',
     'image-to-video-1': 'https://images.unsplash.com/photo-1676299081847-824916de030a?w=120&h=120&auto=format&fit=crop&q=80',
+    'starcoder': 'https://images.unsplash.com/photo-1675426513824-77813readf13?w=120&h=120&auto=format&fit=crop&q=80',
   };
 
   return avatars[modelId] || 'https://images.unsplash.com/photo-1675426513824-77813readf13?w=120&h=120&auto=format&fit=crop&q=80';

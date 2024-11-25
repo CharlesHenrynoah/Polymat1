@@ -45,6 +45,12 @@ export const modelCategories: ModelCategory[] = [
         description: 'Generate code in multiple programming languages',
         category: 'text-to-code'
       },
+      {
+        id: 'starcoder',
+        name: 'Starcoder',
+        description: 'Generate code using the Starcoder model',
+        category: 'text-to-code'
+      },
     ]
   },
   {
