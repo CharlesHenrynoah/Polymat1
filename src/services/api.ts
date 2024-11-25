@@ -1,9 +1,11 @@
 import { HfInference } from '@huggingface/inference';
+import { refreshToken } from '../config/configdb';
 
 const client = new HfInference(import.meta.env.VITE_HUGGINGFACE_API_KEY);
 
 export const chatWithBot = async (message: string): Promise<string> => {
   try {
+    await refreshToken();
     const response = await client.textGeneration({
       model: 'bigcode/starcoder2-3b',
       inputs: message,

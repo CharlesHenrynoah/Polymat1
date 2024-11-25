@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChatState, Message } from '../types/chat';
 import { InferenceClient } from '@huggingface/inference';
+import { refreshToken } from '../config/configdb';
 
 export const useChat = () => {
   const [state, setState] = useState<ChatState>({
@@ -25,6 +26,8 @@ export const useChat = () => {
     }));
 
     try {
+      await refreshToken();
+
       const client = new InferenceClient({
         model: 'bigcode/starcoder2-3b',
         token: import.meta.env.VITE_HUGGINGFACE_API_KEY,
