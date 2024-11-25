@@ -1,7 +1,7 @@
 import { HfInference } from '@huggingface/inference';
 
 const REPO_ID = 'bigcode/starcoder2-3b';
-const TOKEN = process.env.NEXT_PUBLIC_HF_TOKEN;
+const TOKEN = import.meta.env.VITE_HF_TOKEN;
 
 class StarCoderService {
   private client: HfInference;
