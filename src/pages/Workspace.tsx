@@ -11,7 +11,7 @@ import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase, { refreshToken } from '../config/configdb';
-import { starCoderService } from '../services/starcoder_inference';
+import { starCoderService, call_llm } from '../services/starcoder_inference';
 import { ErrorMessage } from '../components/ErrorMessage';
 
 export const Workspace: React.FC = () => {
@@ -121,7 +121,7 @@ export const Workspace: React.FC = () => {
       let responseText: string;
 
       if (selectedModelId === 'starcoder') {
-        responseText = await starCoderService.generateCode(content);
+        responseText = await call_llm(content);
       } else {
         const response = await starCoderService.generateCode(content);
         responseText = response;

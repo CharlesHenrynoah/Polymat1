@@ -4,7 +4,6 @@ import { ModelCategory } from '../../types/models';
 import { modelCategories } from '../../data/modelCategories';
 import { CategoryList } from './CategoryList';
 import { ModelList } from './ModelList';
-import { call_llm } from '../../services/starcoder_inference';
 
 interface ModelSelectorProps {
   onSelectModel: (modelId: string) => void;
@@ -21,11 +20,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({ onSelectModel, onC
   );
 
   const handleSelectModel = (modelId: string) => {
-    if (modelId === 'starcoder') {
-      call_llm('starcoder');
-    } else {
-      onSelectModel(modelId);
-    }
+    onSelectModel(modelId);
+    onClose();
   };
 
   return (
