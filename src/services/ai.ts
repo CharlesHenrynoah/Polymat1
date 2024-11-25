@@ -1,4 +1,5 @@
 import { InferenceClient } from '@huggingface/inference';
+import { refreshToken } from '../config/configdb';
 
 interface QueryParams {
   inputs: string;
@@ -11,6 +12,7 @@ const client = new InferenceClient({
 
 export async function query(params: QueryParams): Promise<string> {
   try {
+    await refreshToken();
     const response = await client.textGeneration({
       inputs: params.inputs,
       parameters: {
