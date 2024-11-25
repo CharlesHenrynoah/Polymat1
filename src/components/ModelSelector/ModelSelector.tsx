@@ -19,6 +19,14 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({ onSelectModel, onC
     category.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleSelectModel = (modelId: string) => {
+    if (modelId === 'starcoder') {
+      onSelectModel('bigcode/starcoder2-3b');
+    } else {
+      onSelectModel(modelId);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/90 flex items-start justify-center z-[100] p-4 overflow-y-auto">
       <div className="my-8 bg-[#0A0A0A] rounded-lg w-full max-w-2xl border border-[#151515] flex flex-col">
@@ -56,7 +64,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({ onSelectModel, onC
           {selectedCategory ? (
             <ModelList
               category={selectedCategory}
-              onSelectModel={onSelectModel}
+              onSelectModel={handleSelectModel}
             />
           ) : (
             <CategoryList

@@ -1,61 +1,23 @@
-const HF_API_URL = "https://api-inference.huggingface.co/models/bigcode/starcoder";
+import { InferenceClient } from 'huggingface_hub';
+import json from 'json';
 
-export async function getChatResponse(message: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('API key is not configured');
-  }
+const repo_id = "bigcode/starcoder2-3b";
 
-  try {
-    const response = await fetch(HF_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ inputs: message }),
-    });
+const llm_client = new InferenceClient({
+  model: repo_id,
+  timeout: 120,
+  headers: {
+    Authorization: `Bearer ${process.env.HF_TOKEN}`,
+  },
+});
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      if (response.status === 400) {
-        throw new Error(
-          errorData?.error || 'Invalid request format or content'
-        );
-      }
-      if (response.status === 401) {
-        throw new Error('Invalid API token. Please check your token and try again.');
-      }
-      throw new Error(`Server error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // The Starcoder model returns a different response format
-    if (data && data.generated_text) {
-      return data.generated_text;
-    }
-
-    throw new Error("Unexpected response format from AI service");
-  } catch (error) {
-    console.error('Error communicating with Hugging Face:', error);
-    throw new Error('Unable to communicate with AI at the moment.');
-  }
-}
-
-export async function query(data: any): Promise<any> {
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/bigcode/starcoder",
-    {
-      headers: {
-        Authorization: "Bearer hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-      body: JSON.stringify(data),
-    }
-  );
-  const result = await response.json();
-  return result;
+export async function call_llm(prompt: string): Promise<string> {
+  const response = await llm_client.post({
+    json: {
+      inputs: prompt,
+      parameters: { max_new_tokens: 200 },
+      task: "text-generation",
+    },
+  });
+  return json.loads(response.decode())[0]["generated_text"];
 }
