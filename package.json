@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@huggingface/hub": "^0.21.0",
+    "@huggingface/inference": "^2.8.1",
     "@supabase/supabase-js": "^2.46.1",
     "firebase": "^11.0.1",
     "lucide-react": "^0.323.0",

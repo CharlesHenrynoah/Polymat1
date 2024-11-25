@@ -1,61 +1,59 @@
-const HF_API_URL = "https://api-inference.huggingface.co/models/bigcode/starcoder";
+interface QueryParams {
+  inputs: string;
+}
 
-export async function getChatResponse(message: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('API key is not configured');
-  }
-
+async function validateToken(token: string): Promise<boolean> {
   try {
-    const response = await fetch(HF_API_URL, {
-      method: "POST",
+    const response = await fetch('https://api-inference.huggingface.co/validate-token', {
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ inputs: message }),
+        'Authorization': `Bearer ${token}`
+      }
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      if (response.status === 400) {
-        throw new Error(
-          errorData?.error || 'Invalid request format or content'
-        );
-      }
-      if (response.status === 401) {
-        throw new Error('Invalid API token. Please check your token and try again.');
-      }
-      throw new Error(`Server error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // The Starcoder model returns a different response format
-    if (data && data.generated_text) {
-      return data.generated_text;
-    }
-
-    throw new Error("Unexpected response format from AI service");
+    return response.ok;
   } catch (error) {
-    console.error('Error communicating with Hugging Face:', error);
-    throw new Error('Unable to communicate with AI at the moment.');
+    console.error('Error validating token:', error);
+    return false;
   }
 }
 
-export async function query(data: any): Promise<any> {
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/bigcode/starcoder",
-    {
+export async function query(params: QueryParams): Promise<string> {
+  const token = import.meta.env.VITE_HUGGINGFACE_API_KEY;
+  if (!token) {
+    throw new Error('API key is not configured');
+  }
+
+  const isValidToken = await validateToken(token);
+  if (!isValidToken) {
+    throw new Error('Invalid or expired API token');
+  }
+
+  try {
+    const response = await fetch('https://api-inference.huggingface.co/models/bigcode/starcoder2-3b', {
+      method: 'POST',
       headers: {
-        Authorization: "Bearer hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-        "Content-Type": "application/json",
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        inputs: params.inputs,
+        parameters: {
+          max_new_tokens: 200,
+          temperature: 0.7
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`AI Service Error: ${response.statusText}`);
     }
-  );
-  const result = await response.json();
-  return result;
+
+    const data = await response.json();
+    return data.generated_text;
+  } catch (error) {
+    throw new Error(`AI Service Error: ${error}`);
+  }
+}
+
+export async function getChatResponse(prompt: string): Promise<string> {
+  return query({ inputs: prompt });
 }

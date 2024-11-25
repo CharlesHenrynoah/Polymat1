@@ -13,7 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import supabase from '../config/configdb';
 import { chatWithBot } from '../services/api';
 import { query, getChatResponse } from '../services/ai';
-import { ErrorMessage } from '../components/ErrorMessage'; // P1bf9
+import { ErrorMessage } from '../components/ErrorMessage';
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -30,7 +30,7 @@ export const Workspace: React.FC = () => {
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState('https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&q=80');
   const [isStarcoderSelected, setIsStarcoderSelected] = useState(false);
-  const [error, setError] = useState<string | null>(null); // P1bf9
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -47,7 +47,6 @@ export const Workspace: React.FC = () => {
         if (error) throw error;
 
         if (userData) {
-          // Utiliser la même logique que MyAccount pour l'URL de l'image
           const profileImageUrl = userData.profile_image 
             ? userData.profile_image.startsWith('data:') 
               ? userData.profile_image 
@@ -189,7 +188,7 @@ export const Workspace: React.FC = () => {
         )
       );
       setCurrentConversation(errorConversation);
-      setError(errorMessage); // P1bf9
+      setError(errorMessage);
       console.error('Error sending message:', error);
     } finally {
       setIsLoading(false);
@@ -218,11 +217,10 @@ export const Workspace: React.FC = () => {
 
   return (
     <div className="h-screen flex overflow-hidden bg-[#050505]">
-      {/* Masquer la barre de progression mais garder le comportement */}
       <div
         className={`bg-[#0A0A0A] border-r border-[#151515] flex flex-col transition-all duration-300 ease-in-out ${
           isSidebarCollapsed ? 'w-0 opacity-0' : 'w-80 opacity-100'
-        } overflow-hidden`} // Ajout de overflow-hidden
+        } overflow-hidden`}
       >
         <ConversationList
           conversations={conversations}
@@ -235,7 +233,6 @@ export const Workspace: React.FC = () => {
         />
       </div>
 
-      {/* Déplacer le bouton de toggle pour qu'il soit toujours visible */}
       <button
         onClick={() => setIsSidebarCollapsed(prev => !prev)}
         className="fixed left-0 top-1/2 -translate-y-1/2 bg-[#0A0A0A] p-1.5 rounded-r-lg border border-l-0 border-[#151515] hover:bg-[#151515] transition-colors z-20 text-zinc-400 hover:text-orange-500"
@@ -348,7 +345,7 @@ export const Workspace: React.FC = () => {
         )}
       </div>
 
-      {error && ( // P1bf9
+      {error && (
         <div className="fixed bottom-4 right-4">
           <ErrorMessage 
             message={error} 
