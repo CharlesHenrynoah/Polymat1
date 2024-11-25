@@ -33,4 +33,21 @@ async function testSupabaseConnection() {
 // Exécuter le test
 testSupabaseConnection()
 
+// Function to refresh the token
+async function refreshToken() {
+  try {
+    const { error } = await supabase.auth.refreshSession()
+    if (error) {
+      console.error('Error refreshing token:', error.message)
+      return false
+    }
+    console.log('Token refreshed successfully!')
+    return true
+  } catch (err) {
+    console.error('Unexpected error:', err)
+    return false
+  }
+}
+
+export { refreshToken }
 export default supabase
