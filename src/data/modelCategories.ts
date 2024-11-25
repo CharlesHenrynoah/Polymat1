@@ -40,16 +40,10 @@ export const modelCategories: ModelCategory[] = [
     requiresAttachment: false,
     models: [
       {
-        id: 'text-to-code-1',
-        name: 'CodeGen AI',
-        description: 'Generate code in multiple programming languages',
-        category: 'text-to-code'
-      },
-      {
         id: 'starcoder',
-        name: 'Starcoder',
-        description: 'Generate code using the Starcoder model with HuggingFace Inference Client',
-        category: 'text-to-code'
+        name: 'StarCoder',
+        description: 'AI code generation powered by StarCoder-2',
+        category: 'text-to-code',
       },
     ]
   },

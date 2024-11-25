@@ -10,16 +10,9 @@ import { Conversation } from '../types/conversation';
 import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
-
-import supabase from '../config/configdb';
-import { call_llm } from '../services/starcoder_inference';
-
 import supabase, { refreshToken } from '../config/configdb';
-import { chatWithBot } from '../services/api';
-import { query, getChatResponse } from '../services/ai';
-
+import { starCoderService } from '../services/starcoder_inference';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { HfInference } from '@huggingface/inference';
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -92,17 +85,9 @@ export const Workspace: React.FC = () => {
     setCurrentConversation(newConversation);
   };
 
-  const handleSendMessage = async (content: string, attachments?: File[]) => {
+  const handleSendMessage = async (content: string) => {
     if (!currentConversation) {
-      const newConversation: Conversation = {
-        id: Date.now().toString(),
-        title: 'New Workspace',
-        lastMessage: content,
-        timestamp: new Date(),
-        messages: []
-      };
-      setConversations(prev => [newConversation, ...prev]);
-      setCurrentConversation(newConversation);
+      handleNewWorkspace();
     }
 
     const activeConversation = currentConversation || {
@@ -118,7 +103,7 @@ export const Workspace: React.FC = () => {
       content,
       role: 'user',
       timestamp: new Date(),
-      attachments,
+      modelId: selectedModelId
     };
 
     const updatedConversation = {
@@ -128,47 +113,27 @@ export const Workspace: React.FC = () => {
       messages: [...activeConversation.messages, userMessage]
     } as Conversation;
 
-    setConversations(prev =>
-      prev.map(conv =>
-        conv.id === activeConversation.id ? updatedConversation as Conversation : conv
-      )
-    );
-    setCurrentConversation(updatedConversation as Conversation);
+    setCurrentConversation(updatedConversation);
     setIsLoading(true);
 
     try {
-
-      const response = await call_llm(content);
-
       await refreshToken();
-      const client = new HfInference(import.meta.env.VITE_HUGGINGFACE_API_KEY);
+      let responseText: string;
 
-      const response = await client.textGeneration({
-        model: 'bigcode/starcoder2-3b',
-        inputs: content,
-        parameters: {
-          max_new_tokens: 200,
-          temperature: 0.7,
-        },
-      });
-
+      if (selectedModelId === 'starcoder') {
+        responseText = await starCoderService.generateCode(content);
+      } else {
+        const response = await starCoderService.generateCode(content);
+        responseText = response;
+      }
 
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
-        content: response.generated_text,
+        content: responseText,
         role: 'assistant',
         timestamp: new Date(),
         modelId: selectedModelId,
-        mediaType: selectedCategory?.id.includes('video')
-          ? 'video'
-          : selectedCategory?.id.includes('image')
-          ? 'image'
-          : selectedCategory?.id.includes('music') || selectedCategory?.id.includes('speech')
-          ? 'audio'
-          : selectedCategory?.id.includes('code')
-          ? 'code'
-          : undefined,
-        mediaUrl: 'https://example.com/sample-media',
+        mediaType: selectedCategory?.id.includes('code') ? 'code' : undefined
       };
 
       const finalConversation = {
@@ -179,11 +144,14 @@ export const Workspace: React.FC = () => {
 
       setConversations(prev =>
         prev.map(conv =>
-          conv.id === activeConversation.id ? finalConversation as Conversation : conv
-      ));
-      setCurrentConversation(finalConversation as Conversation);
+          conv.id === activeConversation.id ? finalConversation : conv
+        )
+      );
+      setCurrentConversation(finalConversation);
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
       const errorConversation: Conversation = {
         ...updatedConversation,
         messages: [
@@ -203,7 +171,6 @@ export const Workspace: React.FC = () => {
         )
       );
       setCurrentConversation(errorConversation);
-      setError(errorMessage);
       console.error('Error sending message:', error);
     } finally {
       setIsLoading(false);
@@ -280,7 +247,7 @@ export const Workspace: React.FC = () => {
           </div>
 
           <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold font-['Orbitron'] text-orange-500 whitespace-nowrap">
-            Starcoder
+            Polymat
           </h1>
 
           <div className="flex items-center gap-4">
@@ -332,7 +299,6 @@ export const Workspace: React.FC = () => {
           <div className="flex-none p-4 border-t border-[#151515] bg-[#0A0A0A]/80 backdrop-blur-sm">
             <ChatInput
               onSendMessage={handleSendMessage}
-              allowAttachments={selectedCategory?.requiresAttachment}
               isLoading={isLoading}
             />
           </div>
