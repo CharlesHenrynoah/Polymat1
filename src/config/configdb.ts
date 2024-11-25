@@ -8,6 +8,11 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true
+  },
+  global: {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+    }
   }
 })
 

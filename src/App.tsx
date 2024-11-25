@@ -103,6 +103,9 @@ function LoginWrapper() {
             state: { email, id: session.user.id } 
           });
         }
+
+        // Store the access token in localStorage
+        localStorage.setItem('accessToken', session.access_token);
       }
     } catch (error) {
       console.error('Login failed:', error);

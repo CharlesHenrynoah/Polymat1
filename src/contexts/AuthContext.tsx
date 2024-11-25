@@ -14,8 +14,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('signupData');
+    const accessToken = localStorage.getItem('accessToken');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser({ ...parsedUser, accessToken });
     }
     setIsLoading(false);
   }, []);

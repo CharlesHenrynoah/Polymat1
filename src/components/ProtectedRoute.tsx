@@ -9,7 +9,9 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <div>Loading...</div>;
   }
 
-  if (!user) {
+  const accessToken = localStorage.getItem('accessToken');
+
+  if (!user || !accessToken) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
