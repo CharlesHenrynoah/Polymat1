@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChatState, Message } from '../types/chat';
-import { InferenceClient } from '@huggingface/inference';
+import { HfInference } from '@huggingface/inference';
 import { refreshToken } from '../config/configdb';
 
 export const useChat = () => {
@@ -28,12 +28,10 @@ export const useChat = () => {
     try {
       await refreshToken();
 
-      const client = new InferenceClient({
-        model: 'bigcode/starcoder2-3b',
-        token: import.meta.env.VITE_HUGGINGFACE_API_KEY,
-      });
+      const client = new HfInference(import.meta.env.VITE_HUGGINGFACE_API_KEY);
 
       const response = await client.textGeneration({
+        model: 'bigcode/starcoder2-3b',
         inputs: content,
         parameters: {
           max_new_tokens: 200,

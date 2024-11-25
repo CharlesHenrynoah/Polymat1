@@ -1,19 +1,15 @@
-# Installer les dépendances
-#pip install huggingface_hub
-
-from huggingface_hub import InferenceClient
+import os
+from huggingface_hub import HfInference
 import json
 
 # Configuration
 repo_id = "bigcode/starcoder2-3b"
+hf_token = os.getenv("HF_TOKEN")
 
 # Initialisation du client
-llm_client = InferenceClient(
-    model=repo_id,
-    timeout=120,
-)
+llm_client = HfInference(api_token=hf_token)
 
-def call_llm(inference_client: InferenceClient, prompt: str):
+def call_llm(inference_client: HfInference, prompt: str):
     """
     Appelle le modèle de langage avec un prompt donné
     
@@ -24,14 +20,12 @@ def call_llm(inference_client: InferenceClient, prompt: str):
     Returns:
         str: Texte généré par le modèle
     """
-    response = inference_client.post(
-        json={
-            "inputs": prompt,
-            "parameters": {"max_new_tokens": 200},
-            "task": "text-generation",
-        }
+    response = inference_client.text_generation(
+        model=repo_id,
+        inputs=prompt,
+        parameters={"max_new_tokens": 200}
     )
-    return json.loads(response.decode())[0]["generated_text"]
+    return response["generated_text"]
 
 # Exemple d'utilisation
 if __name__ == "__main__":
