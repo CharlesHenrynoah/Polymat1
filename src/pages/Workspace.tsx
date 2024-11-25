@@ -14,6 +14,7 @@ import supabase from '../config/configdb';
 import { chatWithBot } from '../services/api';
 import { query, getChatResponse } from '../services/ai';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { InferenceClient } from '@huggingface/inference';
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -131,16 +132,22 @@ export const Workspace: React.FC = () => {
     setIsLoading(true);
 
     try {
-      let response;
-      if (isStarcoderSelected) {
-        response = await getChatResponse(content);
-      } else {
-        response = await query({ inputs: content });
-      }
+      const client = new InferenceClient({
+        model: 'bigcode/starcoder2-3b',
+        token: import.meta.env.VITE_HUGGINGFACE_API_KEY,
+      });
+
+      const response = await client.textGeneration({
+        inputs: content,
+        parameters: {
+          max_new_tokens: 200,
+          temperature: 0.7,
+        },
+      });
 
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
-        content: response,
+        content: response.generated_text,
         role: 'assistant',
         timestamp: new Date(),
         modelId: selectedModelId,

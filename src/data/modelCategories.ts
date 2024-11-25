@@ -48,7 +48,7 @@ export const modelCategories: ModelCategory[] = [
       {
         id: 'starcoder',
         name: 'Starcoder',
-        description: 'Generate code using the Starcoder model',
+        description: 'Generate code using the Starcoder model with HuggingFace Inference Client',
         category: 'text-to-code'
       },
     ]
