@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Send, Paperclip, Mic, Sparkles } from 'lucide-react';
-// Corriger les chemins d'importation
-import { PromptHelper } from '/';  
-import { TranscribeModal } from '/TranscribeModal';
+import { PromptHelper } from '.././components/Chat/PromptHelper';  
+import { TranscribeModal } from '.././components/Chat/TranscribeModal';
 
 interface ChatInputProps {
   onSendMessage: (message: string, attachments?: File[]) => void;
@@ -27,9 +26,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim().length === 0) {
-      return;
-    }
+    if (message.trim().length === 0) return;
     
     try {
       await onSendMessage(message.trim(), attachments);
@@ -37,7 +34,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       setAttachments([]);
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Keep the message in the input if sending failed
     }
   };
 
@@ -62,7 +58,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const isOverCharacterLimit = message.length > MAX_CHARACTERS;
-  const characterPercentage = (message.length / MAX_CHARACTERS) * 100;
 
   return (
     <div className="space-y-2 relative">
@@ -107,9 +102,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               </button>
             </div>
           ))}
-          <div className="text-sm text-zinc-400">
-            {MAX_ATTACHMENTS - attachments.length} attachments remaining
-          </div>
         </div>
       )}
 
@@ -178,36 +170,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               <Send className="w-4 h-4" />
             </button>
           </div>
-
-          {message.length > 0 && (
-            <div className="mt-1.5 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-32 h-1 bg-zinc-700 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all ${
-                      characterPercentage > 90 ? 'bg-red-500' : 'bg-orange-500'
-                    }`}
-                    style={{ width: `${Math.min(characterPercentage, 100)}%` }}
-                  />
-                </div>
-                <span className={characterPercentage > 90 ? 'text-red-500' : 'text-zinc-400'}>
-                  {message.length}/{MAX_CHARACTERS}
-                </span>
-              </div>
-              {isOverCharacterLimit && (
-                <span className="text-red-500">Message too long</span>
-              )}
-            </div>
-          )}
         </div>
       </div>
-
-      {typeof import.meta !== 'undefined' && import.meta.env.DEV && (
-        <div className="text-xs text-zinc-500 mt-1">
-          <p>Character count: {message.length}</p>
-          <p>Attachments: {attachments.length}</p>
-        </div>
-      )}
     </div>
   );
 };

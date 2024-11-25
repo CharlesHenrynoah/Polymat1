@@ -201,13 +201,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           )}
         </div>
       </div>
-
-      {typeof import.meta !== 'undefined' && import.meta.env.DEV && (
-        <div className="text-xs text-zinc-500 mt-1">
-          <p>Character count: {message.length}</p>
-          <p>Attachments: {attachments.length}</p>
-        </div>
-      )}
     </div>
   );
 };
