@@ -10,9 +10,14 @@ import { Conversation } from '../types/conversation';
 import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
+
+import supabase from '../config/configdb';
+import { call_llm } from '../services/starcoder_inference';
+
 import supabase, { refreshToken } from '../config/configdb';
 import { chatWithBot } from '../services/api';
 import { query, getChatResponse } from '../services/ai';
+
 import { ErrorMessage } from '../components/ErrorMessage';
 import { HfInference } from '@huggingface/inference';
 
@@ -132,6 +137,9 @@ export const Workspace: React.FC = () => {
     setIsLoading(true);
 
     try {
+
+      const response = await call_llm(content);
+
       await refreshToken();
       const client = new HfInference(import.meta.env.VITE_HUGGINGFACE_API_KEY);
 
@@ -143,6 +151,7 @@ export const Workspace: React.FC = () => {
           temperature: 0.7,
         },
       });
+
 
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),

@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { ChatState, Message } from '../types/chat';
+
+import { call_llm } from '../services/starcoder_inference';
+
 import { InferenceClient } from '@huggingface/inference';
 import { refreshToken } from '../config/configdb';
+
 
 export const useChat = () => {
   const [state, setState] = useState<ChatState>({
@@ -26,6 +30,8 @@ export const useChat = () => {
     }));
 
     try {
+
+
       await refreshToken();
 
       const client = new InferenceClient({
@@ -40,6 +46,7 @@ export const useChat = () => {
           temperature: 0.7,
         },
       });
+
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
