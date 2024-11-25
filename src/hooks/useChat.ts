@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChatState, Message } from '../types/chat';
-import { chatWithBot } from '../services/api';
+import { call_llm } from '../services/starcoder_inference';
 
 export const useChat = () => {
   const [state, setState] = useState<ChatState>({
@@ -25,7 +25,7 @@ export const useChat = () => {
     }));
 
     try {
-      const response = await chatWithBot(content);
+      const response = await call_llm(content);
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: response,

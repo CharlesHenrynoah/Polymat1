@@ -11,8 +11,7 @@ import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase from '../config/configdb';
-import { chatWithBot } from '../services/api';
-import { query, getChatResponse } from '../services/ai';
+import { call_llm } from '../services/starcoder_inference';
 import { ErrorMessage } from '../components/ErrorMessage';
 
 export const Workspace: React.FC = () => {
@@ -131,12 +130,7 @@ export const Workspace: React.FC = () => {
     setIsLoading(true);
 
     try {
-      let response;
-      if (isStarcoderSelected) {
-        response = await getChatResponse(content);
-      } else {
-        response = await query({ inputs: content });
-      }
+      const response = await call_llm(content);
 
       const aiMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
