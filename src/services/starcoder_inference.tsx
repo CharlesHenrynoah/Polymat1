@@ -1,153 +1,89 @@
 import { HfInference } from '@huggingface/inference';
 
-const REPO_ID = 'bigcode/starcoder2-3b';
+const REPO_ID = 'Qwen/Qwen2.5-Coder-32B-Instruct';
 const HF_TOKEN = "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";
 
 interface PromptConfig {
-  language: string;
   task: string;
+  language?: string; // Made optional
+  style?: 'concise' | 'detailed';
+  context?: string;
 }
 
-class StarCoderService {
+export class StarCoderService {
   private client: HfInference;
-  private readonly defaultPromptTemplate = `You are an expert software engineer tasked with writing high-quality, production-grade code.
-Focus on writing clear, efficient, and well-documented solutions.
-
-TASK DESCRIPTION:
-{task}
-
-PROGRAMMING LANGUAGE:
-{language}
-
-SPECIFIC REQUIREMENTS:
-{requirements}
-
-CODE STRUCTURE REQUIREMENTS:
-1. Start with function/class documentation
-2. Include input validation
-3. Implement proper error handling
-4. Add type hints where applicable
-5. Include example usage in comments
-
-QUALITY STANDARDS:
-- Code must be efficient and optimized
-- Variable names must be descriptive
-- Follow language-specific best practices
-- Include error handling for edge cases
-- Write clean, maintainable code
-
-CODE SOLUTION:`;
-
+  
   constructor() {
     this.client = new HfInference(HF_TOKEN);
   }
 
-  private getSpecificRequirements(task: string): string {
-    if (!task || typeof task !== 'string') {
-      return 'Write basic, functional code with proper error handling';
-    }
-
-    const taskLower = task.toLowerCase();
-    
-    if (taskLower.includes('function')) {
-      return `- Write a single-purpose, pure function
-- Implement comprehensive input validation
-- Handle all edge cases
-- Return consistent types
-- Add clear documentation`;
-    }
-
-    if (taskLower.includes('algorithm')) {
-      return `- Optimize for time complexity
-- Consider space complexity
-- Handle edge cases efficiently
-- Implement error checking
-- Document complexity analysis`;
-    }
-
-    if (taskLower.includes('class')) {
-      return `- Follow OOP principles
-- Implement proper encapsulation
-- Add comprehensive error handling
-- Include method documentation
-- Consider thread safety`;
-    }
-
-    return `- Write clear, efficient code
-- Implement error handling
-- Add proper documentation
-- Consider edge cases`;
-  }
-
-  private getGenerationParameters(task: string) {
-    // Paramètres ajustés pour une meilleure qualité de code
-    return {
-      max_new_tokens: 1000,
-      return_full_text: false,
-      temperature: 0.2,    // Réduit pour plus de cohérence
-      top_p: 0.90,
-      top_k: 40,
-      repetition_penalty: 1.3,
-      stop: ["```", "'''", '"""']
-    };
-  }
-
-  async generateCode(promptConfig: PromptConfig): Promise<string> {
+  async generateCode(config: PromptConfig): Promise<string> {
     try {
-      const task = String(promptConfig?.task || '').trim();
-      const language = String(promptConfig?.language || 'python').trim();
-      const requirements = this.getSpecificRequirements(task);
-
-      const prompt = this.defaultPromptTemplate
-        .replace('{task}', task)
-        .replace('{language}', language)
-        .replace('{requirements}', requirements);
+      const prompt = `Generate code in any programming language for: ${config.task}${
+        config.language ? ` using ${config.language}` : ''
+      }. Code only, no explanations.`;
 
       const response = await this.client.textGeneration({
         model: REPO_ID,
         inputs: prompt,
-        parameters: this.getGenerationParameters(task)
+        parameters: {
+          max_new_tokens: 32000,
+          temperature: 0.3,
+          top_p: 0.95,
+          top_k: 50,
+          repetition_penalty: 1.2,
+          stop: ["###", "Notes:", "Example:", "Output:"] 
+        }
       });
 
       if (!response?.generated_text) {
         throw new Error('No code generated');
       }
 
-      return this.cleanOutput(response.generated_text);
+      return this.extractCodeOnly(response.generated_text);
     } catch (error) {
       console.error('Generation error:', error);
       throw error;
     }
   }
 
-  private cleanOutput(text: string): string {
-    if (!text || typeof text !== 'string') return '';
+  private extractCodeOnly(text: string): string {
+    if (!text) return '';
 
-    return text
-      .replace(/^```[\w]*\n?/, '')
-      .replace(/```$/, '')
-      .replace(/^\s*#.*$/gm, '')  // Supprime les commentaires inutiles
-      .replace(/\n{3,}/g, '\n\n') // Normalise l'espacement
+    // Try to find code between code blocks with any language identifier
+    const codeBlockMatch = text.match(/```[\w]*\n([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      return codeBlockMatch[1].trim();
+    }
+
+    // Clean and extract code without language assumptions
+    const cleanText = text
+      .replace(/^(?:Here's|Here is|This is|The|Solution:|Code:|Implementation:).*/i, '')
+      .replace(/\b(?:First|Step|Next|Finally|Then)\b.*?:\s*/g, '')
+      .replace(/\[[^\]]+\]/g, '')
+      .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
+
+    const lines = cleanText.split('\n');
+    const codeLines = lines.filter(line => 
+      !line.toLowerCase().includes('explanation') &&
+      !line.toLowerCase().includes('step') &&
+      !line.toLowerCase().includes('note') &&
+      line.trim().length > 0
+    );
+
+    return codeLines.join('\n');
   }
 }
 
-export const starCoderService = new StarCoderService();
+export async function call_llm(prompt: string, language?: string): Promise<string> {
+  const service = new StarCoderService();
+  return service.generateCode({
+    task: prompt,
+    language,
+    style: 'detailed'
+  });
+}
 
-export const call_llm = async (task: string, language: string = 'python'): Promise<string> => {
-  if (!task || typeof task !== 'string') {
-    throw new Error('Valid task string is required');
-  }
-
-  try {
-    return await starCoderService.generateCode({
-      language: language || 'python',
-      task
-    });
-  } catch (error) {
-    console.error('LLM call error:', error);
-    throw error;
-  }
-};
-
-export default starCoderService;
+export default StarCoderService;
