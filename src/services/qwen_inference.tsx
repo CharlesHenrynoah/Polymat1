@@ -5,12 +5,12 @@ const HF_TOKEN = "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";
 
 interface PromptConfig {
   task: string;
-  language?: string; // Made optional
+  language?: string;
   style?: 'concise' | 'detailed';
   context?: string;
 }
 
-export class StarCoderService {
+export class QwenService {
   private client: HfInference;
   
   constructor() {
@@ -19,9 +19,11 @@ export class StarCoderService {
 
   async generateCode(config: PromptConfig): Promise<string> {
     try {
-      const prompt = `Generate code in any programming language for: ${config.task}${
-        config.language ? ` using ${config.language}` : ''
-      }. Code only, no explanations.`;
+      const prompt = `Write code only, no explanations or comments:
+Task: ${config.task}
+${config.language ? `Language: ${config.language}` : ''}
+Response format: Only code, no text explanations
+`;
 
       const response = await this.client.textGeneration({
         model: REPO_ID,
@@ -50,13 +52,11 @@ export class StarCoderService {
   private extractCodeOnly(text: string): string {
     if (!text) return '';
 
-    // Try to find code between code blocks with any language identifier
     const codeBlockMatch = text.match(/```[\w]*\n([\s\S]*?)```/);
     if (codeBlockMatch) {
       return codeBlockMatch[1].trim();
     }
 
-    // Clean and extract code without language assumptions
     const cleanText = text
       .replace(/^(?:Here's|Here is|This is|The|Solution:|Code:|Implementation:).*/i, '')
       .replace(/\b(?:First|Step|Next|Finally|Then)\b.*?:\s*/g, '')
@@ -78,7 +78,7 @@ export class StarCoderService {
 }
 
 export async function call_llm(prompt: string, language?: string): Promise<string> {
-  const service = new StarCoderService();
+  const service = new QwenService();
   return service.generateCode({
     task: prompt,
     language,
@@ -86,4 +86,4 @@ export async function call_llm(prompt: string, language?: string): Promise<strin
   });
 }
 
-export default StarCoderService;
+export default QwenService;

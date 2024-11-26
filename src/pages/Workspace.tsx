@@ -12,7 +12,7 @@ import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase, { refreshToken } from '../config/configdb';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { call_llm } from '../services/starcoder_inference';
+import { call_llm } from '../services/qwen_inference';
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();

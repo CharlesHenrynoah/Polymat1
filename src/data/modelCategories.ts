@@ -1,3 +1,5 @@
+// data/modelCategories.ts
+
 import { ModelCategory } from '../types/models';
 
 export const modelCategories: ModelCategory[] = [
@@ -14,7 +16,6 @@ export const modelCategories: ModelCategory[] = [
         description: 'High-quality video generation from detailed text descriptions',
         category: 'text-to-video'
       },
-      // Add more models as needed
     ]
   },
   {
@@ -40,11 +41,11 @@ export const modelCategories: ModelCategory[] = [
     requiresAttachment: false,
     models: [
       {
-        id: 'starcoder',
-        name: 'StarCoder',
-        description: 'AI code generation powered by StarCoder-2',
-        category: 'text-to-code',
-      },
+        id: 'qwen',
+        name: 'Qwen2.5-Coder',
+        description: 'State-of-the-art 32B parameter code LLM with 5.5T tokens training. Features code generation, reasoning, and fixing capabilities matching GPT-4. Supports 128K context length.',
+        category: 'text-to-code'
+      }
     ]
   },
   {
