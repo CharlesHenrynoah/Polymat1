@@ -11,8 +11,8 @@ import { ChatMessage as ChatMessageType } from '../types/models';
 import { modelCategories } from '../data/modelCategories';
 import { useAuth } from '../contexts/AuthContext';
 import supabase, { refreshToken } from '../config/configdb';
-import { starCoderService, call_llm } from '../services/starcoder_inference';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { call_llm } from '../services/qwen_inference';
 
 export const Workspace: React.FC = () => {
   const { user } = useAuth();
@@ -123,8 +123,7 @@ export const Workspace: React.FC = () => {
       if (selectedModelId === 'starcoder') {
         responseText = await call_llm(content);
       } else {
-        const response = await starCoderService.generateCode(content);
-        responseText = response;
+        responseText = await call_llm(content);
       }
 
       const aiMessage: ChatMessageType = {
