@@ -10,22 +10,31 @@ interface PromptConfig {
 
 class StarCoderService {
   private client: HfInference;
-  private readonly defaultPromptTemplate = `You are a senior software engineer writing professional grade code.
-Your task is to write clear, optimized, and production-ready code.
+  private readonly defaultPromptTemplate = `You are an expert software engineer tasked with writing high-quality, production-grade code.
+Focus on writing clear, efficient, and well-documented solutions.
 
-TASK: {task}
-LANGUAGE: {language}
+TASK DESCRIPTION:
+{task}
 
-REQUIREMENTS:
+PROGRAMMING LANGUAGE:
+{language}
+
+SPECIFIC REQUIREMENTS:
 {requirements}
 
-EXPECTED QUALITY STANDARDS:
-- Code must be clean, efficient, and well-structured
-- All inputs must be properly validated
-- Edge cases must be handled
-- Error handling must be comprehensive
-- Variable names must be clear and descriptive
-- Code should follow best practices and patterns
+CODE STRUCTURE REQUIREMENTS:
+1. Start with function/class documentation
+2. Include input validation
+3. Implement proper error handling
+4. Add type hints where applicable
+5. Include example usage in comments
+
+QUALITY STANDARDS:
+- Code must be efficient and optimized
+- Variable names must be descriptive
+- Follow language-specific best practices
+- Include error handling for edge cases
+- Write clean, maintainable code
 
 CODE SOLUTION:`;
 
@@ -33,137 +42,92 @@ CODE SOLUTION:`;
     this.client = new HfInference(HF_TOKEN);
   }
 
-  private getTaskType(task: string): 'basic' | 'algorithm' | 'datastructure' | 'system' {
-    if (!task || typeof task !== 'string') return 'basic';
+  private getSpecificRequirements(task: string): string {
+    if (!task || typeof task !== 'string') {
+      return 'Write basic, functional code with proper error handling';
+    }
 
     const taskLower = task.toLowerCase();
-    if (taskLower.includes('algorithm') || taskLower.includes('sort') || taskLower.includes('search')) {
-      return 'algorithm';
-    }
-    if (taskLower.includes('class') || taskLower.includes('stack') || taskLower.includes('queue')) {
-      return 'datastructure';
-    }
-    if (taskLower.includes('system') || taskLower.includes('framework')) {
-      return 'system';
-    }
-    return 'basic';
-  }
-
-  private getRequirements(task: string): string {
-    const taskType = this.getTaskType(task);
     
-    const commonRequirements = `- Input validation is mandatory
-- Error cases must be handled gracefully
-- Code must be optimized for performance
-- Documentation is required for complex logic`;
+    if (taskLower.includes('function')) {
+      return `- Write a single-purpose, pure function
+- Implement comprehensive input validation
+- Handle all edge cases
+- Return consistent types
+- Add clear documentation`;
+    }
 
-    const specificRequirements = {
-      basic: `- Function must be pure and focused
-- Return types must be consistent
-- Edge cases must be considered`,
+    if (taskLower.includes('algorithm')) {
+      return `- Optimize for time complexity
+- Consider space complexity
+- Handle edge cases efficiently
+- Implement error checking
+- Document complexity analysis`;
+    }
 
-      algorithm: `- Time complexity must be optimal
-- Space complexity must be considered
-- Algorithm must be stable
-- Edge cases must be handled efficiently`,
+    if (taskLower.includes('class')) {
+      return `- Follow OOP principles
+- Implement proper encapsulation
+- Add comprehensive error handling
+- Include method documentation
+- Consider thread safety`;
+    }
 
-      datastructure: `- Data structure must be properly encapsulated
-- Operations must have optimal complexity
-- Memory management must be efficient
-- Thread safety should be considered`,
-
-      system: `- System must be scalable
-- Error handling must be comprehensive
-- Logging should be implemented
-- Performance must be optimized`
-    };
-
-    return `${commonRequirements}\n${specificRequirements[taskType]}`;
+    return `- Write clear, efficient code
+- Implement error handling
+- Add proper documentation
+- Consider edge cases`;
   }
 
   private getGenerationParameters(task: string) {
-    const taskType = this.getTaskType(task);
-    
-    const baseParams = {
-      max_new_tokens: 800,
+    // Paramètres ajustés pour une meilleure qualité de code
+    return {
+      max_new_tokens: 1000,
       return_full_text: false,
-      repetition_penalty: 1.2,
+      temperature: 0.2,    // Réduit pour plus de cohérence
+      top_p: 0.90,
+      top_k: 40,
+      repetition_penalty: 1.3,
       stop: ["```", "'''", '"""']
     };
-
-    // Ajuster les paramètres selon le type de tâche
-    const typeParams = {
-      basic: {
-        temperature: 0.1,
-        top_p: 0.85,
-        top_k: 30
-      },
-      algorithm: {
-        temperature: 0.2,
-        top_p: 0.90,
-        top_k: 40
-      },
-      datastructure: {
-        temperature: 0.3,
-        top_p: 0.92,
-        top_k: 45
-      },
-      system: {
-        temperature: 0.4,
-        top_p: 0.95,
-        top_k: 50
-      }
-    };
-
-    return { ...baseParams, ...typeParams[taskType] };
-  }
-
-  private buildPrompt(config: PromptConfig): string {
-    try {
-      const task = String(config?.task || '').trim();
-      const language = String(config?.language || 'python').trim();
-      const requirements = this.getRequirements(task);
-
-      return this.defaultPromptTemplate
-        .replace('{task}', task)
-        .replace('{language}', language)
-        .replace('{requirements}', requirements);
-    } catch (error) {
-      console.error('Prompt building error:', error);
-      throw new Error('Failed to build prompt');
-    }
   }
 
   async generateCode(promptConfig: PromptConfig): Promise<string> {
     try {
-      const prompt = this.buildPrompt(promptConfig);
-      const parameters = this.getGenerationParameters(promptConfig.task);
-      
+      const task = String(promptConfig?.task || '').trim();
+      const language = String(promptConfig?.language || 'python').trim();
+      const requirements = this.getSpecificRequirements(task);
+
+      const prompt = this.defaultPromptTemplate
+        .replace('{task}', task)
+        .replace('{language}', language)
+        .replace('{requirements}', requirements);
+
       const response = await this.client.textGeneration({
         model: REPO_ID,
         inputs: prompt,
-        parameters
+        parameters: this.getGenerationParameters(task)
       });
-      
+
       if (!response?.generated_text) {
         throw new Error('No code generated');
       }
 
-      return this.postProcessCode(response.generated_text);
+      return this.cleanOutput(response.generated_text);
     } catch (error) {
       console.error('Generation error:', error);
       throw error;
     }
   }
 
-  private postProcessCode(code: string): string {
-    if (!code || typeof code !== 'string') return '';
+  private cleanOutput(text: string): string {
+    if (!text || typeof text !== 'string') return '';
 
-    return code
+    return text
       .replace(/^```[\w]*\n?/, '')
       .replace(/```$/, '')
-      .replace(/^\s*#.*$/gm, '')  // Enlever les commentaires inutiles
-      .replace(/\n{3,}/g, '\n\n') // Normaliser l'espacement
+      .replace(/^\s*#.*$/gm, '')  // Supprime les commentaires inutiles
+      .replace(/\n{3,}/g, '\n\n') // Normalise l'espacement
       .trim();
   }
 }
